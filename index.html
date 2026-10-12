@@ -45,8 +45,10 @@ h2 { font: 800 22px/1 G, sans-serif; letter-spacing: -.02em; text-transform: upp
 #edit .sw input:checked { background: var(--g); }
 #edit .btn.on { border-color: var(--g); color: var(--text); background: color-mix(in srgb, var(--g) 18%, var(--card)); }
 #edit .save { background: var(--a); color: var(--ai); box-shadow: 0 10px 40px -12px var(--g); }
+.tip2 { display: block; margin-top: 4px; font-size: 12px; opacity: .7; }
 .chip { display: inline-flex; align-items: center; gap: 7px; }
 .chip i { width: 14px; height: 14px; border-radius: 4px; background: var(--a); }
+.chip .lg, .tile .svc .lg { width: 16px; height: 16px; object-fit: contain; }
 .tip { color: var(--mute); font-size: 13px; margin: -6px 0 16px; }
 .top { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
 .back { width: 40px; height: 40px; border-radius: 12px; border: 1px solid var(--line); background: var(--card); color: var(--text); font: 600 18px G, sans-serif; flex: none; }
@@ -146,6 +148,9 @@ h1 { font-size: 64px; margin: 10px 0 10px; }
 .pal { display: flex; gap: 10px; flex-wrap: wrap; background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; }
 .pal button { width: 30px; height: 30px; border-radius: 9px; border: 2px solid transparent; cursor: pointer; }
 .pal button.on { border-color: var(--text); box-shadow: 0 0 0 2px var(--ink); }
+.pal .wheel { position: relative; width: 30px; height: 30px; border-radius: 50%; background: conic-gradient(red, yellow, lime, cyan, blue, magenta, red); border: 2px solid transparent; cursor: pointer; }
+.pal .wheel.on { border-color: var(--text); box-shadow: 0 0 0 2px var(--ink); }
+.pal .wheel input { position: absolute; inset: 0; opacity: 0; width: 100%; height: 100%; cursor: pointer; }
 #edit .sw input:checked::after { background: #0E1013; }
 </style>
 </head>
@@ -162,7 +167,7 @@ h1 { font-size: 64px; margin: 10px 0 10px; }
 <section id="edit" class="hide">
   <div class="top"><button class="back" id="back">←</button><div><div class="kick" id="eSvc"></div><h2 id="eTitle"></h2></div></div>
   <div class="stage"><div class="tilt"><canvas id="cv"></canvas></div></div>
-  <p class="tip">Всё уже заполнено — можно сохранить сразу. Поменяй, что хочешь.</p>
+  <p class="tip">Всё уже заполнено — можно сохранить сразу. Поменяй, что хочешь.<br><span class="tip2">Превью стоит под наклоном, чтобы его не утащили скриншотом. Файл придёт ровным и чётким.</span></p>
   <div class="f" id="fields"></div>
   <button class="save" id="save">Сохранить картинку</button>
 </section>
@@ -179,6 +184,8 @@ const MEAS = document.createElement("canvas").getContext("2d"), MINI = document.
 
 // ── лица и имена: всё заполнено заранее, «🎲» перемешивает ──
 let FACES = [], userAva = null;
+const LOGO = { "Инстаграм": "logos/instagram-icon.svg", "Telegram": "logos/telegram.svg", "Нейросеть": "logos/openai-icon.svg" };
+const IGW = new Image(); IGW.onload = () => refresh(); IGW.src = "logos/instagram-word.svg";  // фирменная надпись Instagram
 const TGP = {};  // узоры обоев Telegram (настоящие, из API Telegram), грузятся при первом выборе
 const tgp = n => { if (!TGP[n]) { TGP[n] = new Image(); TGP[n].onload = () => refresh(); TGP[n].src = `tg/${n}.svg`; } return TGP[n]; };
 const FV = "v=4"; fetch("faces/index.json?" + FV, { cache: "no-store" }).then(r => r.json()).then(list => {
@@ -316,8 +323,9 @@ const T = [
      const W = 486, H = 204, c = ctx(cv, W, H); c.fillStyle = "#000"; c.fillRect(0, 0, W, H);
      c.strokeStyle = "#fff"; c.lineWidth = 2.3; c.lineCap = "round";
      c.beginPath(); c.moveTo(16, 30); c.lineTo(38, 30); c.moveTo(27, 19); c.lineTo(27, 41); c.stroke();      // «+»
-     c.fillStyle = "#fff"; c.font = `38px Script, cursive`; c.textBaseline = "middle"; const ww = c.measureText(v.word).width, wx = (W - ww) / 2 - 10;
-     c.fillText(v.word, wx, 31); c.lineWidth = 1.9; c.beginPath(); c.moveTo(wx + ww + 9, 28); c.lineTo(wx + ww + 14, 33); c.lineTo(wx + ww + 19, 28); c.stroke();
+     c.fillStyle = "#fff"; c.font = `38px Script, cursive`; c.textBaseline = "middle";
+     const logo = v.word === "Instagram" && IGW.complete && IGW.naturalWidth, ww = logo ? 106 : c.measureText(v.word).width, wx = (W - ww) / 2 - 10;
+     if (logo) c.drawImage(IGW, wx, 31 - 15, 106, 106 * 146 / 512); else c.fillText(v.word, wx, 31); c.lineWidth = 1.9; c.beginPath(); c.moveTo(wx + ww + 9, 28); c.lineTo(wx + ww + 14, 33); c.lineTo(wx + ww + 19, 28); c.stroke();
      icon(c, "heart", W - 30, 31, 30, "#fff", 2.1);
      if (v.dot) { c.fillStyle = "#FF0034"; c.beginPath(); c.arc(W - 18, 19, 4.4, 0, 7); c.fill(); }
      c.textBaseline = "top";
@@ -441,7 +449,7 @@ const T = [
        { k: "theme", t: "choice", l: "Тема", v: "light", opts: [["light", "Светлая"], ["dark", "Тёмная"]] },
        { k: "wall", t: "choice", l: "Обои", v: "pattern", opts: [["pattern", "Зверята"], ["p0", "Космос"], ["p1", "Магия"], ["p2", "Игры"], ["p3", "Лето"], ["p4", "Школа"], ["p5", "Природа"], ["none", "Без узора"]] }, { k: "sex", t: "choice", l: "Собеседник", v: "f", opts: [["f", "Девушка"], ["m", "Парень"]] },
        { k: "who", t: "text", l: "Имя собеседника", v: "Аня", half: 1 }, { k: "time", t: "text", l: "Время", v: "23:41", half: 1 },
-       { k: "head", t: "check", l: "Шапка чата с именем", v: true }, { k: "ava", t: "check", l: "Аватарка у собеседника", v: true }, { k: "read", t: "check", l: "Прочитано ✓✓", v: true }],
+       { k: "head", t: "check", l: "Шапка чата с именем", v: true }, { k: "ava", t: "check", l: "Аватарка у собеседника", v: true }, { k: "read", t: "choice", l: "Прочитано", v: "all", opts: [["all", "Всё ✓✓"], ["last", "Кроме последнего"], ["none", "Ничего ✓"]] }],
    draw(cv, v) {
      const W = 390, F = `400 16px R, ${SYS}`, LH = 21, TF = `400 12px R, ${SYS}`, maxT = 252, hH = v.head ? 58 : 0, aw = v.ava ? 38 : 0;
      const msgs = (v.msgs || []).filter(m => m.t);
@@ -473,7 +481,7 @@ const T = [
        c.strokeStyle = K.back; c.lineWidth = 2.4; c.lineCap = c.lineJoin = "round"; c.beginPath(); c.moveTo(24, 20); c.lineTo(15, 29); c.lineTo(24, 38); c.stroke();
        c.textAlign = "center"; c.font = `500 17px R, ${SYS}`; c.fillStyle = K.name; c.fillText(v.who, W / 2, 12);
        c.font = `400 13.5px R, ${SYS}`; c.fillStyle = K.sub; c.fillText((v.sex || "f") === "m" ? "был недавно" : "была недавно", W / 2, 32); c.textAlign = "left"; img(c, face, W - 52, 10, 38); }
-     let y = hH + 14;
+     let y = hH + 14; const lastMe = lay.map(m => m.me).lastIndexOf(1);
      lay.forEach((m, i) => { if (i) y += lay[i - 1].me !== m.me ? 10 : 3;
        const x = m.me ? W - 10 - m.w : 10 + aw, bg = m.me ? K.outB : K.inB, R = 17, sr = m.tail ? 5 : R;
        c.fillStyle = bg; rr(c, x, y, m.w, m.h, m.me ? [R, R, sr, R] : [R, R, R, sr]); c.fill();
@@ -483,8 +491,9 @@ const T = [
        if (!D) { c.save(); c.shadowColor = "rgba(0,0,0,.12)"; c.shadowOffsetY = 1; c.shadowBlur = 1; rr(c, x, y, m.w, m.h, m.me ? [R, R, sr, R] : [R, R, R, sr]); c.fill(); c.restore(); }
        c.font = F; c.fillStyle = K.txt; c.textBaseline = "middle"; m.ls.forEach((l, j) => c.fillText(l, x + 12, y + 8 + j * LH + LH / 2)); c.textBaseline = "top";
        c.font = TF; c.fillStyle = m.me ? K.outT : K.inT; c.textAlign = "right"; const tx = x + m.w - (m.me ? 30 : 11), ty = y + m.h - 18; c.fillText(v.time, tx, ty); c.textAlign = "left";
-       if (m.me) { c.strokeStyle = v.read ? K.tick : K.outT; c.lineWidth = 1.5; c.lineCap = c.lineJoin = "round";
-         (v.read ? [0, 5] : [0]).forEach(dx => { c.beginPath(); c.moveTo(tx + 4 + dx, ty + 7); c.lineTo(tx + 7 + dx, ty + 10); c.lineTo(tx + 13 + dx, ty + 3); c.stroke(); }); }
+       if (m.me) { const rd = v.read === true || v.read === "all" || (v.read === "last" && i !== lastMe);  // после последнего прочитанного — одна галочка
+         c.strokeStyle = rd ? K.tick : K.outT; c.lineWidth = 1.5; c.lineCap = c.lineJoin = "round";
+         (rd ? [0, 5] : [0]).forEach(dx => { c.beginPath(); c.moveTo(tx + 4 + dx, ty + 7); c.lineTo(tx + 7 + dx, ty + 10); c.lineTo(tx + 13 + dx, ty + 3); c.stroke(); }); }
        y += m.h; });
      c.restore();
    } },
@@ -586,7 +595,7 @@ function renderHome() {
     const a = ACC[t.svc] || {}; tile.style.setProperty("--a", a.bg); tile.style.setProperty("--g", a.glow);
     let pv = t.soon ? `<span class='kick'>${t.when || "скоро"}</span>` : "";
     if (!t.soon) { const cv = document.createElement("canvas"); t.draw(cv, vals[t.id] || defaults(t)); pv = `<img src="${cv.toDataURL()}" alt="">`; }
-    tile.innerHTML = `<div class="pv">${pv}</div><div class="svc"><i></i>${t.svc}</div><b>${t.title}</b><small>${t.hint}</small>`;
+    tile.innerHTML = `<div class="pv">${pv}</div><div class="svc">${LOGO[t.svc] ? `<img class="lg" src="${LOGO[t.svc]}" alt="">` : "<i></i>"}${t.svc}</div><b>${t.title}</b><small>${t.hint}</small>`;
     if (!t.soon) tile.onclick = () => open(t);
     grid.appendChild(tile);
   }
@@ -595,7 +604,7 @@ function renderHome() {
 function open(t) {
   cur = t; vals[t.id] = vals[t.id] || defaults(t);
   const a = ACC[t.svc] || {}, ed = $("edit"); ed.style.setProperty("--a", a.bg); ed.style.setProperty("--ai", a.ink); ed.style.setProperty("--g", a.glow);
-  $("eSvc").innerHTML = `<span class="chip"><i></i>${t.svc}</span>`; $("eTitle").textContent = t.title;
+  $("eSvc").innerHTML = `<span class="chip">${LOGO[t.svc] ? `<img class="lg" src="${LOGO[t.svc]}" alt="">` : "<i></i>"}${t.svc}</span>`; $("eTitle").textContent = t.title;
   const box = $("fields"); box.innerHTML = "";
   const hasAva = t.f.some(f => f.t === "ava"), hasDice = t.f.some(f => f.t === "dice");
   if (hasAva || hasDice) box.insertAdjacentHTML("beforeend", `<div class="row2 full">${hasDice ? `<button type="button" class="btn" id="dice">🎲 Другие люди</button>` : ""}${hasAva ? `<label class="btn" style="text-transform:none;letter-spacing:0;font:600 14px M,sans-serif;color:var(--text)"><img id="avaPrev" alt="" ${userAva ? `src="${userAva.src}"` : "hidden"}>Своя аватарка<input type="file" accept="image/*" id="ava"></label><button type="button" class="btn" id="avaDel" ${userAva ? "" : "hidden"}>✕ Убрать своё фото</button>` : ""}</div>`);
@@ -605,7 +614,7 @@ function open(t) {
     else if (f.t === "stars") box.insertAdjacentHTML("beforeend", `<label class="${cls}">${f.l}<div class="stars" data-k="${f.k}">${[1, 2, 3, 4, 5].map(i => `<button type="button" data-n="${i}" class="${i <= v ? "on" : ""}">★</button>`).join("")}</div></label>`);
     else if (f.t === "choice") box.insertAdjacentHTML("beforeend", `<label class="full">${f.l}<div class="row2" data-k="${f.k}" data-choice>${f.opts.map(([k, n]) => `<button type="button" class="btn${v === k ? " on" : ""}" data-v="${k}">${n}</button>`).join("")}</div></label>`);
     else if (f.t === "msgs") box.insertAdjacentHTML("beforeend", `<label class="full">${f.l}<div class="msgs" data-k="${f.k}"></div></label>`);
-    else if (f.t === "color") box.insertAdjacentHTML("beforeend", `<label class="full">${f.l}<div class="pal" data-k="${f.k}">${PAL.map(c => `<button type="button" style="background:${c}" class="${c === v ? "on" : ""}" data-c="${c}"></button>`).join("")}</div></label>`);
+    else if (f.t === "color") box.insertAdjacentHTML("beforeend", `<label class="full">${f.l}<div class="pal" data-k="${f.k}">${PAL.map(c => `<button type="button" style="background:${c}" class="${c === v ? "on" : ""}" data-c="${c}"></button>`).join("")}<span class="wheel${PAL.includes(v) ? "" : " on"}" title="Любой цвет"><input type="color" value="${PAL.includes(v) ? "#5E5CE6" : v}" data-wheel="${f.k}"></span></div></label>`);
     else if (f.t === "area") box.insertAdjacentHTML("beforeend", `<label class="full">${f.l}<textarea data-k="${f.k}">${esc(v)}</textarea></label>`);
     else if (f.t === "text") box.insertAdjacentHTML("beforeend", `<label class="${cls}">${f.l}<input data-k="${f.k}" value="${esc(v)}"${/^(nc|nl|nf|likes|rows|dm)$/.test(f.k) ? ' inputmode="numeric"' : ""}></label>`);
   }
@@ -624,7 +633,9 @@ function open(t) {
         if (b.dataset.a === "add") list.push({ me: list.length ? 1 - list[list.length - 1].me : 0, t: "" });
         paint(); draw(); haptic(); if (b.dataset.a === "add") el.querySelectorAll("input")[list.length - 1].focus(); };
       return; }
-    if (el.classList.contains("pal")) { el.onclick = e => { const b = e.target.closest("button"); if (!b) return; e.preventDefault(); vals[t.id][el.dataset.k] = b.dataset.c;
+    if (el.classList.contains("pal")) { const wh = el.querySelector("[data-wheel]");
+      wh.oninput = () => { vals[t.id][el.dataset.k] = wh.value; el.querySelectorAll("button").forEach(x => x.classList.remove("on")); wh.parentElement.classList.add("on"); draw(); };
+      el.onclick = e => { if (e.target.closest(".wheel")) return; el.querySelector(".wheel").classList.remove("on"); const b = e.target.closest("button"); if (!b) return; e.preventDefault(); vals[t.id][el.dataset.k] = b.dataset.c;
       el.querySelectorAll("button").forEach(x => x.classList.toggle("on", x === b)); draw(); haptic(); }; return; }
     if (el.hasAttribute("data-choice")) el.onclick = e => { e.preventDefault(); const b = e.target.closest("button"); if (!b) return; vals[t.id][el.dataset.k] = b.dataset.v;
       el.querySelectorAll("button").forEach(x => x.classList.toggle("on", x === b)); draw(); haptic(); };
