@@ -151,9 +151,9 @@ const MEAS = document.createElement("canvas").getContext("2d"), MINI = document.
 
 // ── лица и имена: всё заполнено заранее, «🎲» перемешивает ──
 let FACES = [], userAva = null;
-fetch("faces/index.json").then(r => r.json()).then(list => {
+const FV = "v=4"; fetch("faces/index.json?" + FV, { cache: "no-store" }).then(r => r.json()).then(list => {
   let left = list.length;
-  FACES = list.map(f => { const im = new Image(); im.onload = im.onerror = () => { if (--left === 0) refresh(); }; im.src = "faces/" + f; return im; });
+  FACES = list.map(f => { const im = new Image(); im.onload = im.onerror = () => { if (--left === 0) refresh(); }; im.src = "faces/" + f + "?" + FV; return im; });
 });
 const NICKS = ["kate.sokolova", "dima_orlov", "alina.vibe", "max.frost", "lera_prt", "nikita.vs", "sonya_mrr", "artem.rzn", "polina.kiss", "vlad_kr",
   "masha.zhu", "egor.pav", "anya_lvn", "ilya.grom", "dasha.moon", "kirill_tt", "vika.art", "sasha.no", "liza_dream", "roma.kot", "ksu.flow", "timur_88",
@@ -310,10 +310,16 @@ const T = [
    } },
  { id: "ig-reactions", svc: "Инстаграм", dot: "#FF0034", title: "Реакции на сторис", hint: "коллаж 9:16 и твой текст",
    f: [{ k: "text", t: "area", l: "Текст (слово в *звёздочках* — красное)", v: "Не ожидал столько ответов на вчерашнюю сторис 🙈\n\nВсем отвечу сегодня вечером\n\nНапиши *ХОЧУ* — пришлю подробности" },
+       { k: "ts", t: "choice", l: "Стиль текста", v: "classic", opts: [["classic", "Классика"], ["box", "Плашки"]] },
        SEED, { k: "rows", t: "text", l: "Рядов аватарок", v: "9", half: 1 }, { k: "fire", t: "check", l: "Огоньки вперемешку с сердечками", v: true }],
    draw(cv, v) {
      const W = 360, cols = 7, d = 36, gap = 11, rows = Math.max(3, Math.min(12, +v.rows || 9));
-     const tl = wrap(`700 16px G, ${SYS}`, v.text, W - 60), H = Math.max(640, 34 + rows * (d + gap) + 30 + tl.length * 23 + 40);
+     const TF = `800 19px M, ${SYS}`, LH = 27, boxes = v.ts === "box";
+     // ровные строки: самая узкая ширина, при которой строк столько же, сколько при максимальной
+     const balanced = para => { const n = wrap(TF, para, W - 64).length; let w = W - 64;
+       for (let t = W - 64; t > 120; t -= 6) { if (wrap(TF, para, t).length > n) break; w = t; } return wrap(TF, para, w); };
+     const tl = String(v.text).split("\n").flatMap(pp => pp ? balanced(pp) : [""]);
+     const H = Math.max(640, 34 + rows * (d + gap) + 30 + tl.length * LH + 40);
      const c = ctx(cv, W, H); c.fillStyle = "#121212"; c.fillRect(0, 0, W, H);
      const x0 = (W - cols * d - (cols - 1) * gap) / 2, y0 = 34, r = rnd(+v.seed + 11);
      faces(+v.seed, cols * rows).forEach((im, i) => { const x = x0 + (i % cols) * (d + gap), y = y0 + Math.floor(i / cols) * (d + gap);
@@ -321,13 +327,18 @@ const T = [
        img(c, im, x, y, d);
        const bx = x + d - 3, by = y + d - 3; c.fillStyle = "#121212"; c.beginPath(); c.arc(bx, by, 8, 0, 7); c.fill();
        if (v.fire && r() < .25) fire(c, bx, by, 12); else { c.fillStyle = "#FF3040"; c.beginPath(); c.arc(bx, by, 6.5, 0, 7); c.fill(); icon(c, "heart", bx, by + .3, 8.5, "#fff"); } });
-     let y = y0 + rows * (d + gap) + 26;
+     let y = y0 + rows * (d + gap) + 26; c.font = TF;
      for (const ln of tl) {
-       if (!ln) { y += 10; continue; }
-       c.font = `700 16px G, ${SYS}`; let x = W / 2 - c.measureText(ln.replace(/\*/g, "")).width / 2;
-       for (const part of ln.split(/(\*[^*]+\*)/)) { const red = /^\*.*\*$/.test(part), t = red ? part.slice(1, -1) : part;
-         c.fillStyle = red ? "#FF3040" : "#F5F5F5"; c.fillText(t, x, y); x += c.measureText(t).width; }
-       y += 23; }
+       if (!ln) { y += 12; continue; }
+       const parts = ln.split(/(\*[^*]+\*)/).filter(Boolean).map(t => ({ red: /^\*.*\*$/.test(t), t: t.replace(/\*/g, "") }));
+       const lw = parts.reduce((a, q) => a + c.measureText(q.t).width + (q.red ? 8 : 0), 0); let x = W / 2 - lw / 2;
+       if (boxes) { c.fillStyle = "#FFFFFF"; rr(c, x - 9, y - 4, lw + 18, LH, 8); c.fill(); }
+       for (const q of parts) { const w = c.measureText(q.t).width;
+         if (q.red) { x += 4; c.fillStyle = "#FF3040"; rr(c, x - 5, y - 3, w + 10, LH - 2, 7); c.fill(); c.fillStyle = "#FFFFFF"; }
+         else c.fillStyle = boxes ? "#0E0E0E" : "#FFFFFF";
+         if (!boxes && !q.red) { c.shadowColor = "rgba(0,0,0,.45)"; c.shadowBlur = 8; c.shadowOffsetY = 1; }
+         c.fillText(q.t, x, y + 1); c.shadowColor = "transparent"; c.shadowBlur = 0; c.shadowOffsetY = 0; x += w + (q.red ? 4 : 0); }
+       y += LH; }
    } },
  { id: "threads", svc: "Threads", dot: "#F3F5F7", title: "Пост", hint: "карточка, как в сторис",
    f: [AVA, SEED, { k: "nick", t: "text", l: "Ник (пусто — случайный)", v: "" }, { k: "text", t: "area", l: "Текст", v: "Поставил будильник на 6 утра, чтобы начать новую жизнь. Новая жизнь началась в 11:40." },
