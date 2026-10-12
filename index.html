@@ -540,7 +540,7 @@ function open(t) {
     else if (f.t === "msgs") box.insertAdjacentHTML("beforeend", `<label class="full">${f.l}<div class="msgs" data-k="${f.k}"></div></label>`);
     else if (f.t === "color") box.insertAdjacentHTML("beforeend", `<label class="full">${f.l}<div class="pal" data-k="${f.k}">${PAL.map(c => `<button type="button" style="background:${c}" class="${c === v ? "on" : ""}" data-c="${c}"></button>`).join("")}</div></label>`);
     else if (f.t === "area") box.insertAdjacentHTML("beforeend", `<label class="full">${f.l}<textarea data-k="${f.k}">${esc(v)}</textarea></label>`);
-    else if (f.t === "text") box.insertAdjacentHTML("beforeend", `<label class="${cls}">${f.l}<input data-k="${f.k}" value="${esc(v)}"></label>`);
+    else if (f.t === "text") box.insertAdjacentHTML("beforeend", `<label class="${cls}">${f.l}<input data-k="${f.k}" value="${esc(v)}"${/^(nc|nl|nf|likes|rows|dm)$/.test(f.k) ? ' inputmode="numeric"' : ""}></label>`);
   }
   if ($("dice")) $("dice").onclick = () => { vals[t.id].seed = Math.floor(Math.random() * 1e6); draw(); haptic(); };
   if ($("ava")) $("ava").onchange = e => { const file = e.target.files[0]; if (!file) return; const im = new Image();
