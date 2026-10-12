@@ -112,6 +112,15 @@ h1 { font-size: 64px; margin: 10px 0 10px; }
 .tile .pv { height: 132px; background: linear-gradient(160deg, color-mix(in srgb, var(--g) 30%, #15181C), #111316 75%); }
 .tile .pv img { max-width: 94%; max-height: 94%; }
 .legal { color: var(--mute); font-size: 12px; text-align: center; margin: 22px 0 0; }
+.msgs { display: grid; gap: 8px; text-transform: none; letter-spacing: 0; }
+.mrow { display: grid; grid-template-columns: 40px 1fr 40px; gap: 6px; }
+.mrow input { padding: 10px 12px; }
+.mrow.me input { border-color: color-mix(in srgb, var(--g) 45%, var(--line)); text-align: right; }
+.mrow button { border: 1px solid var(--line); background: var(--card); color: var(--mute); border-radius: 10px; font: 600 15px G, sans-serif; cursor: pointer; }
+.pal { display: flex; gap: 10px; flex-wrap: wrap; background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; }
+.pal button { width: 30px; height: 30px; border-radius: 9px; border: 2px solid transparent; cursor: pointer; }
+.pal button.on { border-color: var(--text); box-shadow: 0 0 0 2px var(--ink); }
+#edit .sw input:checked::after { background: #0E1013; }
 </style>
 </head>
 <body>
@@ -252,6 +261,7 @@ function pill(c, x, y, v, k) {  // красная плашка активнос�
 // ── шаблоны: поля + отрисовка. Всё заполнено «как в жизни», чтобы можно было сохранить сразу ──
 const SEED = { k: "seed", t: "dice" }, AVA = { k: "ava", t: "ava" };
 const LIGHT = v => ({ k: "light", t: "check", l: "Светлая тема", v });
+const PAL = ["#34C759", "#0A84FF", "#FF3B30", "#FF9500", "#AF52DE", "#FF2D55", "#5AC8FA", "#1C1C1E"];  // цвета значков iOS
 const ACC = {"Telegram":{bg:"#2AABEE",ink:"#fff",glow:"#2AABEE"},"Уведомление":{bg:"#F2F2F7",ink:"#111",glow:"#8E8E93"},"Инстаграм":{bg:"linear-gradient(90deg,#FFB03B,#FF5A36 35%,#F6216B 70%,#C21BD3)",ink:"#fff",glow:"#F6216B"},"Threads":{bg:"#F3F5F7",ink:"#101010",glow:"#F3F5F7"},"X (Twitter)":{bg:"#1D9BF0",ink:"#fff",glow:"#1D9BF0"},"Нейросеть":{bg:"#10A37F",ink:"#fff",glow:"#10A37F"},"Wildberries":{bg:"linear-gradient(90deg,#CB11AB,#7B1FD0)",ink:"#fff",glow:"#CB11AB"},"Ozon":{bg:"#005BFF",ink:"#fff",glow:"#005BFF"},"Авито":{bg:"linear-gradient(90deg,#00AAFF,#97CF26)",ink:"#fff",glow:"#00AAFF"}};
 const T = [
  { id: "ig-stories", svc: "Инстаграм", dot: "#FF0034", title: "Шапка со сторис", hint: "кружки, плашка лайков",
@@ -371,31 +381,50 @@ const T = [
        c.font = af; c.fillStyle = C ? "#E8E6DC" : "#ECECEC"; al.forEach((l, i) => c.fillText(l, pad, y + i * lh));
      }
    } },
- { id: "tg-chat", svc: "Telegram", dot: "#2AABEE", title: "Переписка", hint: "пузыри, как в чате",
-   f: [{ k: "msgs", t: "area", l: "Сообщения (> в начале — твоё, справа)", v: "ты где\n> уже выхожу\nты это писал час назад\n> ну я морально выхожу\nпонятно 🙂" },
-       { k: "time", t: "text", l: "Время", v: "23:41", half: 1 }, { k: "read", t: "check", l: "Прочитано ✓✓", v: true }],
+ { id: "tg-chat", svc: "Telegram", dot: "#2AABEE", title: "Переписка", hint: "пузыри, аватарки, галочки",
+   f: [SEED, { k: "msgs", t: "msgs", l: "Сообщения", v: [{ me: 0, t: "ты где" }, { me: 1, t: "уже выхожу" }, { me: 0, t: "ты это писал час назад" }, { me: 1, t: "ну я морально выхожу" }, { me: 0, t: "понятно 🙂" }] },
+       { k: "who", t: "text", l: "Имя собеседника", v: "Аня", half: 1 }, { k: "time", t: "text", l: "Время", v: "23:41", half: 1 },
+       { k: "head", t: "check", l: "Шапка чата с именем", v: true }, { k: "ava", t: "check", l: "Аватарка у собеседника", v: true }, { k: "read", t: "check", l: "Прочитано ✓✓", v: true }],
    draw(cv, v) {
-     const W = 390, pad = 12, F = `400 16px ${SYS}`, maxW = W * .72;
-     const msgs = String(v.msgs).split("\n").filter(Boolean).map(l => ({ me: l.startsWith(">"), t: l.replace(/^>\s*/, "") }));
-     const lay = msgs.map(m => { const ls = wrap(F, m.t, maxW - 70); MEAS.font = F; const w = Math.max(...ls.map(x => MEAS.measureText(x).width));
-       const inline = ls.length === 1 && w + 70 < maxW; return { ...m, ls, w: Math.min(maxW, w + (inline ? 70 : 24)), h: ls.length * 21 + (inline ? 14 : 30) }; });
-     const H = pad + lay.reduce((a, m, i) => a + m.h + (i && lay[i - 1].me !== m.me ? 8 : 3), 0) + pad, c = ctx(cv, W, H);
-     const g = c.createLinearGradient(0, 0, W, H); g.addColorStop(0, "#1E3A2F"); g.addColorStop(1, "#2B3A4A");
-     rr(c, 0, 0, W, H, 18); c.fillStyle = g; c.fill();
-     let y = pad;
-     lay.forEach((m, i) => { if (i) y += lay[i - 1].me !== m.me ? 8 : 3;
-       const x = m.me ? W - pad - m.w : pad; rr(c, x, y, m.w, m.h, 17); c.fillStyle = m.me ? "#2B5278" : "#182533"; c.fill();
-       c.font = F; c.fillStyle = "#FFFFFF"; m.ls.forEach((l, j) => c.fillText(l, x + 12, y + 7 + j * 21));
-       c.font = `400 12px ${SYS}`; c.fillStyle = m.me ? "#7DA8D3" : "#6D7F8F"; c.textAlign = "right";
-       const tx = x + m.w - (m.me ? 26 : 10), ty = y + m.h - 18; c.fillText(v.time, tx, ty);
-       if (m.me) { c.strokeStyle = v.read ? "#5DB3F7" : "#7DA8D3"; c.lineWidth = 1.5; c.lineCap = c.lineJoin = "round";
-         const k = v.read ? [0, 5] : [0]; k.forEach(dx => { c.beginPath(); c.moveTo(tx + 5 + dx, ty + 7); c.lineTo(tx + 8 + dx, ty + 10); c.lineTo(tx + 14 + dx, ty + 3); c.stroke(); }); }
-       c.textAlign = "left"; y += m.h; });
+     const W = 390, F = `400 16px ${SYS}`, LH = 21, TF = `400 11.5px ${SYS}`, maxT = 252, hH = v.head ? 58 : 0, aw = v.ava ? 38 : 0;
+     const msgs = (v.msgs || []).filter(m => m.t);
+     MEAS.font = TF; const tw = MEAS.measureText(v.time).width + 6;
+     const lay = msgs.map((m, i) => {
+       const ls = wrap(F, m.t, maxT); MEAS.font = F; const last = MEAS.measureText(ls[ls.length - 1]).width, wid = Math.max(...ls.map(x => MEAS.measureText(x).width));
+       const meta = tw + (m.me ? 20 : 0), inline = last + meta + 8 <= maxT;   // время помещается в последнюю строку?
+       const w = Math.max(wid, inline ? last + meta + 8 : meta) + 24, h = ls.length * LH + (inline ? 14 : 14 + 16);
+       return { ...m, ls, w, h, tail: !msgs[i + 1] || msgs[i + 1].me !== m.me };
+     });
+     const H = hH + 14 + lay.reduce((a, m, i) => a + m.h + (i && lay[i - 1].me !== m.me ? 10 : 3), 0) + 16, c = ctx(cv, W, H);
+     // обои: тёмный градиент + едва видимый рисунок
+     c.save(); rr(c, 0, 0, W, H, 18); c.clip();
+     const g = c.createLinearGradient(0, 0, W, H); g.addColorStop(0, "#1D2C3B"); g.addColorStop(.55, "#15202B"); g.addColorStop(1, "#1B2A2A"); c.fillStyle = g; c.fillRect(0, 0, W, H);
+     const r = rnd(42); for (let i = 0; i < 46; i++) { const x = r() * W, y = r() * H, k = r();
+       c.globalAlpha = .07; if (k < .33) icon(c, "heart", x, y, 14, "#9FC3E0", 1.4); else if (k < .66) { c.strokeStyle = "#9FC3E0"; c.lineWidth = 1.4; c.beginPath(); c.arc(x, y, 6, 0, 7); c.stroke(); } else star(c, x, y, 6, "#9FC3E0"); }
+     c.globalAlpha = 1;
+     const face = faces(+v.seed, 1)[0];
+     if (v.head) { c.fillStyle = "rgba(26,36,48,.96)"; c.fillRect(0, 0, W, hH); c.fillStyle = "#2B3A4A"; c.fillRect(0, hH - .5, W, .5);
+       c.strokeStyle = "#5EB5F7"; c.lineWidth = 2.4; c.lineCap = c.lineJoin = "round"; c.beginPath(); c.moveTo(24, 20); c.lineTo(15, 29); c.lineTo(24, 38); c.stroke();
+       c.textAlign = "center"; c.font = `600 16px ${SYS}`; c.fillStyle = "#FFF"; c.fillText(v.who, W / 2, 12);
+       c.font = `400 13px ${SYS}`; c.fillStyle = "#7C93A8"; c.fillText("был(а) недавно", W / 2, 32); c.textAlign = "left"; img(c, face, W - 52, 10, 38); }
+     let y = hH + 14;
+     lay.forEach((m, i) => { if (i) y += lay[i - 1].me !== m.me ? 10 : 3;
+       const x = m.me ? W - 10 - m.w : 10 + aw, bg = m.me ? "#2B5278" : "#1F2C3A", R = 17, sr = m.tail ? 5 : R;
+       c.fillStyle = bg; rr(c, x, y, m.w, m.h, m.me ? [R, R, sr, R] : [R, R, R, sr]); c.fill();
+       if (m.tail) { c.beginPath(); if (m.me) { c.moveTo(x + m.w - 8, y + m.h); c.quadraticCurveTo(x + m.w + 2, y + m.h, x + m.w + 7, y + m.h - 1); c.quadraticCurveTo(x + m.w, y + m.h - 6, x + m.w, y + m.h - 14); }
+         else { c.moveTo(x + 8, y + m.h); c.quadraticCurveTo(x - 2, y + m.h, x - 7, y + m.h - 1); c.quadraticCurveTo(x, y + m.h - 6, x, y + m.h - 14); } c.fill();
+         if (!m.me && v.ava) img(c, face, 8, y + m.h - 32, 32); }
+       c.font = F; c.fillStyle = "#FFFFFF"; m.ls.forEach((l, j) => c.fillText(l, x + 12, y + 7 + j * LH));
+       c.font = TF; c.fillStyle = m.me ? "#7EAAD8" : "#6F8597"; c.textAlign = "right"; const tx = x + m.w - (m.me ? 30 : 11), ty = y + m.h - 18; c.fillText(v.time, tx, ty); c.textAlign = "left";
+       if (m.me) { c.strokeStyle = v.read ? "#68B7F5" : "#7EAAD8"; c.lineWidth = 1.5; c.lineCap = c.lineJoin = "round";
+         (v.read ? [0, 5] : [0]).forEach(dx => { c.beginPath(); c.moveTo(tx + 4 + dx, ty + 7); c.lineTo(tx + 7 + dx, ty + 10); c.lineTo(tx + 13 + dx, ty + 3); c.stroke(); }); }
+       y += m.h; });
+     c.restore();
    } },
  { id: "push", svc: "Уведомление", dot: "#8E8E93", title: "Пуш на экране", hint: "любое приложение",
    f: [{ k: "app", t: "text", l: "Приложение", v: "Мама", half: 1 }, { k: "when", t: "text", l: "Когда", v: "сейчас", half: 1 },
        { k: "title", t: "text", l: "Заголовок", v: "" }, { k: "body", t: "area", l: "Текст", v: "Ты поел? Я видела, ты был в сети, а мне не ответил" },
-       { k: "color", t: "text", l: "Цвет значка", v: "#34C759", half: 1 }, { k: "letter", t: "text", l: "Буква на значке", v: "М", half: 1 }],
+       { k: "color", t: "color", l: "Цвет значка", v: "#34C759" }, { k: "letter", t: "text", l: "Буква на значке", v: "М" }],
    draw(cv, v) {
      const W = 380, pad = 14, ic = 38, tw = W - pad * 2 - ic - 12, bl = wrap(`400 15px ${SYS}`, v.body, tw);
      const H = pad + (v.title ? 40 : 20) + bl.length * 20 + pad + 2, c = ctx(cv, W, H);
@@ -468,7 +497,7 @@ const T = [
 
 // ── экраны ──
 const vals = {};
-const defaults = t => Object.fromEntries(t.f.filter(f => "v" in f).map(f => [f.k, f.v]).concat([["seed", 1 + T.indexOf(t) * 17]]));
+const defaults = t => Object.fromEntries(t.f.filter(f => "v" in f).map(f => [f.k, structuredClone(f.v)]).concat([["seed", 1 + T.indexOf(t) * 17]]));
 const esc = s => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/"/g, "&quot;");
 let cur = null;
 function refresh() { cur ? draw() : renderHome(); }
@@ -508,6 +537,8 @@ function open(t) {
     if (f.t === "check") box.insertAdjacentHTML("beforeend", `<label class="sw full">${f.l}<input type="checkbox" data-k="${f.k}" ${v ? "checked" : ""}></label>`);
     else if (f.t === "stars") box.insertAdjacentHTML("beforeend", `<label class="${cls}">${f.l}<div class="stars" data-k="${f.k}">${[1, 2, 3, 4, 5].map(i => `<button type="button" data-n="${i}" class="${i <= v ? "on" : ""}">★</button>`).join("")}</div></label>`);
     else if (f.t === "choice") box.insertAdjacentHTML("beforeend", `<label class="full">${f.l}<div class="row2" data-k="${f.k}" data-choice>${f.opts.map(([k, n]) => `<button type="button" class="btn${v === k ? " on" : ""}" data-v="${k}">${n}</button>`).join("")}</div></label>`);
+    else if (f.t === "msgs") box.insertAdjacentHTML("beforeend", `<label class="full">${f.l}<div class="msgs" data-k="${f.k}"></div></label>`);
+    else if (f.t === "color") box.insertAdjacentHTML("beforeend", `<label class="full">${f.l}<div class="pal" data-k="${f.k}">${PAL.map(c => `<button type="button" style="background:${c}" class="${c === v ? "on" : ""}" data-c="${c}"></button>`).join("")}</div></label>`);
     else if (f.t === "area") box.insertAdjacentHTML("beforeend", `<label class="full">${f.l}<textarea data-k="${f.k}">${esc(v)}</textarea></label>`);
     else if (f.t === "text") box.insertAdjacentHTML("beforeend", `<label class="${cls}">${f.l}<input data-k="${f.k}" value="${esc(v)}"></label>`);
   }
@@ -515,6 +546,18 @@ function open(t) {
   if ($("ava")) $("ava").onchange = e => { const file = e.target.files[0]; if (!file) return; const im = new Image();
     im.onload = () => { userAva = im; $("avaPrev").src = im.src; $("avaPrev").hidden = false; draw(); }; im.src = URL.createObjectURL(file); };
   box.querySelectorAll("[data-k]").forEach(el => {
+    if (el.classList.contains("msgs")) { const list = vals[t.id][el.dataset.k];
+      const paint = () => { el.innerHTML = list.map((m, i) => `<div class="mrow ${m.me ? "me" : ""}"><button type="button" data-a="side" data-i="${i}" title="Сменить сторону">⇄</button><input data-i="${i}" value="${esc(m.t)}"><button type="button" data-a="del" data-i="${i}">✕</button></div>`).join("") + `<button type="button" class="btn" data-a="add">+ Сообщение</button>`; };
+      paint();
+      el.oninput = e => { if (e.target.dataset.i != null && e.target.tagName === "INPUT") { list[+e.target.dataset.i].t = e.target.value; draw(); } };
+      el.onclick = e => { const b = e.target.closest("button"); if (!b) return; e.preventDefault(); const i = +b.dataset.i;
+        if (b.dataset.a === "side") list[i].me = list[i].me ? 0 : 1;
+        if (b.dataset.a === "del") list.splice(i, 1);
+        if (b.dataset.a === "add") list.push({ me: list.length ? 1 - list[list.length - 1].me : 0, t: "" });
+        paint(); draw(); haptic(); if (b.dataset.a === "add") el.querySelectorAll("input")[list.length - 1].focus(); };
+      return; }
+    if (el.classList.contains("pal")) { el.onclick = e => { const b = e.target.closest("button"); if (!b) return; e.preventDefault(); vals[t.id][el.dataset.k] = b.dataset.c;
+      el.querySelectorAll("button").forEach(x => x.classList.toggle("on", x === b)); draw(); haptic(); }; return; }
     if (el.hasAttribute("data-choice")) el.onclick = e => { e.preventDefault(); const b = e.target.closest("button"); if (!b) return; vals[t.id][el.dataset.k] = b.dataset.v;
       el.querySelectorAll("button").forEach(x => x.classList.toggle("on", x === b)); draw(); haptic(); };
     else if (el.classList.contains("stars")) el.onclick = e => { e.preventDefault(); const b = e.target.closest("button"); if (!b) return; vals[t.id][el.dataset.k] = +b.dataset.n;
