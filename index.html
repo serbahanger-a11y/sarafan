@@ -233,7 +233,16 @@ function wrap(font, text, maxW) {
   for (const para of String(text || "").split("\n")) {
     if (!para) { out.push(""); continue; }
     let line = "";
-    for (const w of para.split(" ")) { const t = line ? line + " " + w : w; if (MEAS.measureText(t).width > maxW && line) { out.push(line); line = w; } else line = t; }
+    for (let w of para.split(" ")) {
+      const t = line ? line + " " + w : w;
+      if (MEAS.measureText(t).width <= maxW) { line = t; continue; }
+      if (line) { out.push(line); line = ""; }
+      while (MEAS.measureText(w).width > maxW) {  // слово длиннее строки (ссылка, «аааа») — режем по буквам, как в приложениях
+        let k = w.length; while (k > 1 && MEAS.measureText(w.slice(0, k)).width > maxW) k--;
+        out.push(w.slice(0, k)); w = w.slice(k);
+      }
+      line = w;
+    }
     out.push(line);
   }
   return out;
