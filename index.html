@@ -9,6 +9,7 @@
 @font-face { font-family: G; src: url(fonts/Geologica.ttf); font-weight: 100 900; font-display: swap; }
 @font-face { font-family: M; src: url(fonts/Manrope.ttf); font-weight: 200 800; font-display: swap; }
 @font-face { font-family: Script; src: url(fonts/GrandHotel.ttf); font-display: swap; }
+@font-face { font-family: R; src: url(fonts/Roboto.ttf); font-weight: 100 900; font-display: swap; }  /* так пишет Telegram на Android */
 /* канон Баха: графит, бирюза, без мадженты; заголовки Geologica, текст Manrope */
 :root { --ink: #14171A; --card: #1B1F23; --line: #2A3036; --text: #F2F4F3; --mute: #8A9399; --teal: #14B8A6; --glow: #46E5D0; }
 * { box-sizing: border-box; margin: 0; -webkit-tap-highlight-color: transparent; }
@@ -442,7 +443,7 @@ const T = [
        { k: "who", t: "text", l: "Имя собеседника", v: "Аня", half: 1 }, { k: "time", t: "text", l: "Время", v: "23:41", half: 1 },
        { k: "head", t: "check", l: "Шапка чата с именем", v: true }, { k: "ava", t: "check", l: "Аватарка у собеседника", v: true }, { k: "read", t: "check", l: "Прочитано ✓✓", v: true }],
    draw(cv, v) {
-     const W = 390, F = `400 16px ${SYS}`, LH = 21, TF = `400 11.5px ${SYS}`, maxT = 252, hH = v.head ? 58 : 0, aw = v.ava ? 38 : 0;
+     const W = 390, F = `400 16px R, ${SYS}`, LH = 21, TF = `400 12px R, ${SYS}`, maxT = 252, hH = v.head ? 58 : 0, aw = v.ava ? 38 : 0;
      const msgs = (v.msgs || []).filter(m => m.t);
      MEAS.font = TF; const tw = MEAS.measureText(v.time).width + 6;
      const D = v.theme === "dark", K = D
@@ -470,8 +471,8 @@ const T = [
      const face = faceOf(+v.seed, v.sex || "f");
      if (v.head) { c.fillStyle = K.head; c.fillRect(0, 0, W, hH); c.fillStyle = K.line; c.fillRect(0, hH - .5, W, .5);
        c.strokeStyle = K.back; c.lineWidth = 2.4; c.lineCap = c.lineJoin = "round"; c.beginPath(); c.moveTo(24, 20); c.lineTo(15, 29); c.lineTo(24, 38); c.stroke();
-       c.textAlign = "center"; c.font = `600 16px ${SYS}`; c.fillStyle = K.name; c.fillText(v.who, W / 2, 12);
-       c.font = `400 13px ${SYS}`; c.fillStyle = K.sub; c.fillText((v.sex || "f") === "m" ? "был недавно" : "была недавно", W / 2, 32); c.textAlign = "left"; img(c, face, W - 52, 10, 38); }
+       c.textAlign = "center"; c.font = `500 17px R, ${SYS}`; c.fillStyle = K.name; c.fillText(v.who, W / 2, 12);
+       c.font = `400 13.5px R, ${SYS}`; c.fillStyle = K.sub; c.fillText((v.sex || "f") === "m" ? "был недавно" : "была недавно", W / 2, 32); c.textAlign = "left"; img(c, face, W - 52, 10, 38); }
      let y = hH + 14;
      lay.forEach((m, i) => { if (i) y += lay[i - 1].me !== m.me ? 10 : 3;
        const x = m.me ? W - 10 - m.w : 10 + aw, bg = m.me ? K.outB : K.inB, R = 17, sr = m.tail ? 5 : R;
@@ -677,6 +678,7 @@ $("dl").onclick = () => { $("dl").disabled = true; $("dl").textContent = "Отк
 $("close").onclick = () => $("out").classList.add("hide");
 $("out").onclick = e => { if (e.target.id === "out" && !$("out").classList.contains("busy")) $("out").classList.add("hide"); };
 document.fonts.ready.then(refresh);
+Promise.all(["400 16px R", "500 16px R"].map(f => document.fonts.load(f))).then(refresh);  // холст сам шрифт не подгружает
 renderHome();
 </script>
 </body>
