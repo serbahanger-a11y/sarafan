@@ -547,7 +547,7 @@ function open(t) {
   $("eSvc").innerHTML = `<span class="chip"><i></i>${t.svc}</span>`; $("eTitle").textContent = t.title;
   const box = $("fields"); box.innerHTML = "";
   const hasAva = t.f.some(f => f.t === "ava"), hasDice = t.f.some(f => f.t === "dice");
-  if (hasAva || hasDice) box.insertAdjacentHTML("beforeend", `<div class="row2 full">${hasDice ? `<button type="button" class="btn" id="dice">🎲 Другие люди</button>` : ""}${hasAva ? `<label class="btn" style="text-transform:none;letter-spacing:0;font:600 14px M,sans-serif;color:var(--text)"><img id="avaPrev" alt="" ${userAva ? `src="${userAva.src}"` : "hidden"}>Своя аватарка<input type="file" accept="image/*" id="ava"></label>` : ""}</div>`);
+  if (hasAva || hasDice) box.insertAdjacentHTML("beforeend", `<div class="row2 full">${hasDice ? `<button type="button" class="btn" id="dice">🎲 Другие люди</button>` : ""}${hasAva ? `<label class="btn" style="text-transform:none;letter-spacing:0;font:600 14px M,sans-serif;color:var(--text)"><img id="avaPrev" alt="" ${userAva ? `src="${userAva.src}"` : "hidden"}>Своя аватарка<input type="file" accept="image/*" id="ava"></label><button type="button" class="btn" id="avaDel" ${userAva ? "" : "hidden"}>✕ Убрать своё фото</button>` : ""}</div>`);
   for (const f of t.f) {
     const v = vals[t.id][f.k], cls = f.half ? "" : "full";
     if (f.t === "check") box.insertAdjacentHTML("beforeend", `<label class="sw full">${f.l}<input type="checkbox" data-k="${f.k}" ${v ? "checked" : ""}></label>`);
@@ -560,7 +560,8 @@ function open(t) {
   }
   if ($("dice")) $("dice").onclick = () => { vals[t.id].seed = Math.floor(Math.random() * 1e6); draw(); haptic(); };
   if ($("ava")) $("ava").onchange = e => { const file = e.target.files[0]; if (!file) return; const im = new Image();
-    im.onload = () => { userAva = im; $("avaPrev").src = im.src; $("avaPrev").hidden = false; draw(); }; im.src = URL.createObjectURL(file); };
+    im.onload = () => { userAva = im; $("avaPrev").src = im.src; $("avaPrev").hidden = false; $("avaDel").hidden = false; draw(); }; im.src = URL.createObjectURL(file); e.target.value = ""; };
+  if ($("avaDel")) $("avaDel").onclick = () => { userAva = null; $("avaPrev").hidden = true; $("avaDel").hidden = true; draw(); haptic(); };
   box.querySelectorAll("[data-k]").forEach(el => {
     if (el.classList.contains("msgs")) { const list = vals[t.id][el.dataset.k];
       const paint = () => { el.innerHTML = list.map((m, i) => `<div class="mrow ${m.me ? "me" : ""}"><button type="button" data-a="side" data-i="${i}" title="Сменить сторону">⇄</button><input data-i="${i}" value="${esc(m.t)}"><button type="button" data-a="del" data-i="${i}">✕</button></div>`).join("") + `<button type="button" class="btn" data-a="add">+ Сообщение</button>`; };
