@@ -83,14 +83,46 @@ input:focus, textarea:focus { outline: none; border-color: var(--teal); }
 .out p { color: var(--mute); text-align: center; font-size: 13px; margin: 14px 0 4px; }
 .out button { margin-top: 10px; width: 100%; border: 1px solid var(--line); border-radius: 12px; padding: 15px; font: 700 13px G, sans-serif; letter-spacing: .08em; text-transform: uppercase; background: var(--card); color: var(--text); }
 .out button.pri { background: var(--glow); color: var(--ink); border-color: var(--glow); }
+
+/* ── главный экран v8: сияние, наклейки, веер ── */
+body { background: #0E1013; }
+body::before { content: ""; position: fixed; inset: -20%; z-index: -1; pointer-events: none;
+  background: radial-gradient(40% 30% at 15% 8%, rgba(70,229,208,.22), transparent 70%),
+              radial-gradient(35% 28% at 95% 18%, rgba(58,91,255,.20), transparent 70%),
+              radial-gradient(45% 30% at 60% 100%, rgba(255,90,78,.10), transparent 70%);
+  animation: aur 18s ease-in-out infinite alternate; }
+@keyframes aur { to { transform: translate3d(-3%, 2%, 0) scale(1.06); } }
+.stickers { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 6px; }
+.st { font: 800 12px G, sans-serif; letter-spacing: .02em; padding: 6px 11px; border-radius: 999px; color: #0E1013; }
+.s1 { background: #46E5D0; transform: rotate(-4deg); } .s2 { background: #FFD23F; transform: rotate(3deg); }
+.s3 { background: #FF5A4E; color: #fff; transform: rotate(-2deg); } .s4 { background: #F2F4F3; transform: rotate(4deg); }
+h1 { font-size: 64px; margin: 10px 0 10px; }
+.fan { position: relative; height: 330px; margin: 14px 0 6px; }
+.fan img { position: absolute; left: 50%; top: 0; border-radius: 16px; filter: drop-shadow(0 18px 36px rgba(0,0,0,.55)); animation: fl 6s ease-in-out infinite; }
+.fan img:nth-child(1) { width: 74%; max-width: 330px; transform: translate(-62%, 8px) rotate(-6deg); z-index: 2; }
+.fan img:nth-child(2) { width: 62%; max-width: 280px; transform: translate(-28%, 92px) rotate(5deg); z-index: 1; animation-delay: -2s; }
+.fan img:nth-child(3) { width: 50%; max-width: 230px; transform: translate(-88%, 250px) rotate(-3deg); z-index: 3; animation-delay: -4s; }
+@keyframes fl { 50% { translate: 0 -6px; } }
+@media (prefers-reduced-motion: reduce) { .fan img, body::before { animation: none; } }
+.filters { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; margin: 18px -16px 0; padding: 0 16px; }
+.filters button { flex: none; border: 1px solid var(--line); background: rgba(27,31,35,.7); color: var(--mute); border-radius: 999px;
+                  padding: 9px 15px; font: 700 13px G, sans-serif; }
+.filters button.on { background: var(--text); color: #0E1013; border-color: var(--text); }
+.tile { background: rgba(27,31,35,.78); backdrop-filter: blur(10px); }
+.tile .pv { height: 132px; background: linear-gradient(160deg, color-mix(in srgb, var(--g) 30%, #15181C), #111316 75%); }
+.tile .pv img { max-width: 94%; max-height: 94%; }
+.legal { color: var(--mute); font-size: 12px; text-align: center; margin: 22px 0 0; }
 </style>
 </head>
 <body>
 <section id="home">
-  <div class="kick">Карточки для рилсов и мемов</div>
+  <div class="stickers"><span class="st s1">реакции</span><span class="st s2">отзывы</span><span class="st s3">мемы</span><span class="st s4">посты</span></div>
   <h1>Сарафан<span>.</span></h1>
-  <p class="sub">Комментарии, реакции, отзывы и посты — уже заполнены, как настоящие. Поменяй, что хочешь, и сохрани прозрачный PNG.</p>
+  <p class="sub">Сделай так, будто о тебе уже говорят. Карточки для рилсов, сторис и мемов — заполнены как настоящие, сохраняются прозрачным PNG.</p>
+  <div class="fan" id="fan"></div>
+  <div class="filters" id="filters"></div>
   <div class="grid" id="tiles"></div>
+  <p class="legal">Карточки — для роликов, пародий и мемов. Не выдавай их за настоящие отзывы.</p>
 </section>
 <section id="edit" class="hide">
   <div class="top"><button class="back" id="back">←</button><div><div class="kick" id="eSvc"></div><h2 id="eTitle"></h2></div></div>
@@ -227,24 +259,25 @@ const T = [
        { k: "nc", t: "text", l: "Комментарии", v: "4", half: 1 }, { k: "nl", t: "text", l: "Лайки", v: "37", half: 1 },
        { k: "nf", t: "text", l: "Подписчики", v: "12", half: 1 }, { k: "dot", t: "check", l: "Красная точка у сердца", v: true }],
    draw(cv, v) {
-     const W = 440, H = 186, P = 26, c = ctx(cv, W, H); c.fillStyle = "#0C0C0E"; c.fillRect(0, 0, W, H);
-     c.strokeStyle = "#fff"; c.lineWidth = 2.2; c.lineCap = "round";
-     c.beginPath(); c.moveTo(P, 30); c.lineTo(P + 20, 30); c.moveTo(P + 10, 20); c.lineTo(P + 10, 40); c.stroke();
-     c.fillStyle = "#fff"; c.font = `36px Script, cursive`; c.textBaseline = "middle"; const ww = c.measureText(v.word).width, wx = (W - ww) / 2 - 8;
-     c.fillText(v.word, wx, 31); c.lineWidth = 1.8; c.beginPath(); c.moveTo(wx + ww + 8, 29); c.lineTo(wx + ww + 13, 34); c.lineTo(wx + ww + 18, 29); c.stroke();
-     icon(c, "heart", W - P - 12, 31, 30, "#fff", 2.1);
-     if (v.dot) { c.fillStyle = "#FF0034"; c.beginPath(); c.arc(W - P - 1, 20, 4.2, 0, 7); c.fill(); }
+     const W = 430, H = 204, c = ctx(cv, W, H); c.fillStyle = "#000"; c.fillRect(0, 0, W, H);
+     c.strokeStyle = "#fff"; c.lineWidth = 2.3; c.lineCap = "round";
+     c.beginPath(); c.moveTo(16, 30); c.lineTo(38, 30); c.moveTo(27, 19); c.lineTo(27, 41); c.stroke();      // «+»
+     c.fillStyle = "#fff"; c.font = `38px Script, cursive`; c.textBaseline = "middle"; const ww = c.measureText(v.word).width, wx = (W - ww) / 2 - 10;
+     c.fillText(v.word, wx, 31); c.lineWidth = 1.9; c.beginPath(); c.moveTo(wx + ww + 9, 28); c.lineTo(wx + ww + 14, 33); c.lineTo(wx + ww + 19, 28); c.stroke();
+     icon(c, "heart", W - 30, 31, 30, "#fff", 2.1);
+     if (v.dot) { c.fillStyle = "#FF0034"; c.beginPath(); c.arc(W - 18, 19, 4.4, 0, 7); c.fill(); }
      c.textBaseline = "top";
-     const d = 62, cy = 104, fs = faces(+v.seed, 4), nk = nicks(+v.seed, 3), step = (W - 2 * P - d) / 3, xs = [0, 1, 2, 3].map(i => P + d / 2 + i * step);
-     c.beginPath(); c.arc(xs[0], cy, d / 2 + 5, 0, 7); c.strokeStyle = "#48484A"; c.lineWidth = 1.6; c.stroke();
-     img(c, userAva || fs[0], xs[0] - d / 2 + 1, cy - d / 2 + 1, d - 2);
-     c.fillStyle = "#fff"; c.beginPath(); c.arc(xs[0] + 22, cy + 22, 10, 0, 7); c.fill(); c.strokeStyle = "#0C0C0E"; c.lineWidth = 3; c.stroke();
-     c.strokeStyle = "#0C0C0E"; c.lineWidth = 2; c.beginPath(); c.moveTo(xs[0] + 17.5, cy + 22); c.lineTo(xs[0] + 26.5, cy + 22); c.moveTo(xs[0] + 22, cy + 17.5); c.lineTo(xs[0] + 22, cy + 26.5); c.stroke();
-     c.textAlign = "center"; c.font = `400 12px ${SYS}`; c.fillStyle = "#A8A8AD"; c.fillText("Ваша история", xs[0], cy + d / 2 + 11);
+     const R = 43, d = 78, cy = 66 + R, step = 94, fs = faces(+v.seed, 5), nk = nicks(+v.seed, 4), xs = [0, 1, 2, 3, 4].map(i => 12 + R + i * step);
+     c.beginPath(); c.arc(xs[0], cy, R, 0, 7); c.strokeStyle = "#3A3A3C"; c.lineWidth = 1.5; c.stroke();
+     img(c, userAva || fs[0], xs[0] - d / 2, cy - d / 2, d);
+     c.fillStyle = "#fff"; c.beginPath(); c.arc(xs[0] + 28, cy + 28, 12, 0, 7); c.fill(); c.strokeStyle = "#000"; c.lineWidth = 3.5; c.stroke();
+     c.strokeStyle = "#000"; c.lineWidth = 2.3; c.beginPath(); c.moveTo(xs[0] + 23, cy + 28); c.lineTo(xs[0] + 33, cy + 28); c.moveTo(xs[0] + 28, cy + 23); c.lineTo(xs[0] + 28, cy + 33); c.stroke();
+     c.textAlign = "center"; c.font = `400 12.5px ${SYS}`; c.fillStyle = "#A8A8A8"; c.fillText("Ваша история", xs[0], cy + R + 8);
      nk.forEach((n, i) => { const x = xs[i + 1];
-       ring(c, x, cy, d / 2 + 5, 3); img(c, fs[i + 1], x - d / 2 + 1, cy - d / 2 + 1, d - 2);
-       c.fillStyle = "#F5F5F5"; c.font = `400 12px ${SYS}`; c.fillText(n, x, cy + d / 2 + 11); });
-     c.textAlign = "left"; pill(c, W - 12, 42, v, .74);
+       ring(c, x, cy, R, 3.4); c.beginPath(); c.arc(x, cy, R - 2.6, 0, 7); c.fillStyle = "#000"; c.fill();
+       img(c, fs[i + 1], x - d / 2 + 1, cy - d / 2 + 1, d - 2);
+       c.fillStyle = "#F5F5F5"; c.font = `400 12.5px ${SYS}`; c.fillText(n, x, cy + R + 8); });
+     c.textAlign = "left"; pill(c, W - 14, 46, v, .76);
    } },
  { id: "ig-notif", svc: "Инстаграм", dot: "#FF0034", title: "Плашка лайков", hint: "отдельно, на любой фон",
    f: [{ k: "nc", t: "text", l: "Комментарии", v: "12", half: 1 }, { k: "nl", t: "text", l: "Лайки", v: "148", half: 1 }, { k: "nf", t: "text", l: "Подписчики", v: "31", half: 1 }],
@@ -403,9 +436,19 @@ const esc = s => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(
 let cur = null;
 function refresh() { cur ? draw() : renderHome(); }
 
+const GROUPS = { "Все": () => true, "Инстаграм": t => t.svc === "Инстаграм", "Отзывы": t => ["Wildberries", "Ozon", "Авито"].includes(t.svc),
+                 "Посты": t => ["Threads", "X (Twitter)"].includes(t.svc), "Нейросети": t => t.svc === "Нейросеть" };
+let group = "Все";
+function renderFan() {
+  $("fan").innerHTML = ["ig-comment", "wb", "ig-notif"].map(id => { const t = T.find(x => x.id === id), cv = document.createElement("canvas");
+    t.draw(cv, vals[id] || defaults(t)); return `<img src="${cv.toDataURL()}" alt="">`; }).join("");
+}
 function renderHome() {
+  renderFan();
+  $("filters").innerHTML = Object.keys(GROUPS).map(g => `<button class="${g === group ? "on" : ""}">${g}</button>`).join("");
+  $("filters").querySelectorAll("button").forEach(b => b.onclick = () => { group = b.textContent; renderHome(); haptic(); });
   const grid = $("tiles"); grid.innerHTML = "";
-  for (const t of T) {
+  for (const t of T.filter(GROUPS[group])) {
     const tile = document.createElement("button"); tile.className = "tile" + (t.soon ? " soon" : "");
     const a = ACC[t.svc] || {}; tile.style.setProperty("--a", a.bg); tile.style.setProperty("--g", a.glow);
     let pv = t.soon ? `<span class='kick'>${t.when || "скоро"}</span>` : "";
