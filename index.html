@@ -125,6 +125,15 @@ const nicks = (seed, n) => shuffled(NICKS, seed + 7).slice(0, n);
 const name1 = seed => shuffled(NAMES, seed + 3)[0];
 const fmt = n => String(n).replace(/\B(?=(\d{3})+(?!\d))/g, " ");
 
+// векторные значки из открытых наборов (Tabler Icons, Simple Icons), сетка 24×24
+const ICONS = {"heart": ["M6.979 3.074a6 6 0 0 1 4.988 1.425l.037 .033l.034 -.03a6 6 0 0 1 4.733 -1.44l.246 .036a6 6 0 0 1 3.364 10.008l-.18 .185l-.048 .041l-7.45 7.379a1 1 0 0 1 -1.313 .082l-.094 -.082l-7.493 -7.422a6 6 0 0 1 3.176 -10.215z"], "bubble": ["M5.821 4.91c3.899 -2.765 9.468 -2.539 13.073 .535c3.667 3.129 4.168 8.238 1.152 11.898c-2.841 3.447 -7.965 4.583 -12.231 2.805l-.233 -.101l-4.374 .931l-.04 .006l-.035 .007h-.018l-.022 .005h-.038l-.033 .004l-.021 -.001l-.023 .001l-.033 -.003h-.035l-.022 -.004l-.022 -.002l-.035 -.007l-.034 -.005l-.016 -.004l-.024 -.005l-.049 -.016l-.024 -.005l-.011 -.005l-.022 -.007l-.045 -.02l-.03 -.012l-.011 -.006l-.014 -.006l-.031 -.018l-.045 -.024l-.016 -.011l-.037 -.026l-.04 -.027l-.002 -.004l-.013 -.009l-.043 -.04l-.025 -.02l-.006 -.007l-.056 -.062l-.013 -.014l-.011 -.014l-.039 -.056l-.014 -.019l-.005 -.01l-.042 -.073l-.007 -.012l-.004 -.008l-.007 -.012l-.014 -.038l-.02 -.042l-.004 -.016l-.004 -.01l-.017 -.061l-.007 -.018l-.002 -.015l-.005 -.019l-.005 -.033l-.008 -.042l-.002 -.031l-.003 -.01v-.016l-.004 -.054l.001 -.036l.001 -.023l.002 -.053l.004 -.025v-.019l.008 -.035l.005 -.034l.005 -.02l.004 -.02l.018 -.06l.003 -.013l1.15 -3.45l-.022 -.037c-2.21 -3.747 -1.209 -8.391 2.413 -11.119z"], "user": ["M12 2a5 5 0 1 1 -5 5l.005 -.217a5 5 0 0 1 4.995 -4.783z", "M14 14a5 5 0 0 1 5 5v1a2 2 0 0 1 -2 2h-10a2 2 0 0 1 -2 -2v-1a5 5 0 0 1 5 -5h4z"], "openai": ["M22.2819 9.8211a5.9847 5.9847 0 0 0-.5157-4.9108 6.0462 6.0462 0 0 0-6.5098-2.9A6.0651 6.0651 0 0 0 4.9807 4.1818a5.9847 5.9847 0 0 0-3.9977 2.9 6.0462 6.0462 0 0 0 .7427 7.0966 5.98 5.98 0 0 0 .511 4.9107 6.051 6.051 0 0 0 6.5146 2.9001A5.9847 5.9847 0 0 0 13.2599 24a6.0557 6.0557 0 0 0 5.7718-4.2058 5.9894 5.9894 0 0 0 3.9977-2.9001 6.0557 6.0557 0 0 0-.7475-7.0729zm-9.022 12.6081a4.4755 4.4755 0 0 1-2.8764-1.0408l.1419-.0804 4.7783-2.7582a.7948.7948 0 0 0 .3927-.6813v-6.7369l2.02 1.1686a.071.071 0 0 1 .038.052v5.5826a4.504 4.504 0 0 1-4.4945 4.4944zm-9.6607-4.1254a4.4708 4.4708 0 0 1-.5346-3.0137l.142.0852 4.783 2.7582a.7712.7712 0 0 0 .7806 0l5.8428-3.3685v2.3324a.0804.0804 0 0 1-.0332.0615L9.74 19.9502a4.4992 4.4992 0 0 1-6.1408-1.6464zM2.3408 7.8956a4.485 4.485 0 0 1 2.3655-1.9728V11.6a.7664.7664 0 0 0 .3879.6765l5.8144 3.3543-2.0201 1.1685a.0757.0757 0 0 1-.071 0l-4.8303-2.7865A4.504 4.504 0 0 1 2.3408 7.872zm16.5963 3.8558L13.1038 8.364 15.1192 7.2a.0757.0757 0 0 1 .071 0l4.8303 2.7913a4.4944 4.4944 0 0 1-.6765 8.1042v-5.6772a.79.79 0 0 0-.407-.667zm2.0107-3.0231l-.142-.0852-4.7735-2.7818a.7759.7759 0 0 0-.7854 0L9.409 9.2297V6.8974a.0662.0662 0 0 1 .0284-.0615l4.8303-2.7866a4.4992 4.4992 0 0 1 6.6802 4.66zM8.3065 12.863l-2.02-1.1638a.0804.0804 0 0 1-.038-.0567V6.0742a4.4992 4.4992 0 0 1 7.3757-3.4537l-.142.0805L8.704 5.459a.7948.7948 0 0 0-.3927.6813zm1.0976-2.3654l2.602-1.4998 2.6069 1.4998v2.9994l-2.5974 1.4997-2.6067-1.4997Z"], "claude": ["m4.7144 15.9555 4.7174-2.6471.079-.2307-.079-.1275h-.2307l-.7893-.0486-2.6956-.0729-2.3375-.0971-2.2646-.1214-.5707-.1215-.5343-.7042.0546-.3522.4797-.3218.686.0608 1.5179.1032 2.2767.1578 1.6514.0972 2.4468.255h.3886l.0546-.1579-.1336-.0971-.1032-.0972L6.973 9.8356l-2.55-1.6879-1.3356-.9714-.7225-.4918-.3643-.4614-.1578-1.0078.6557-.7225.8803.0607.2246.0607.8925.686 1.9064 1.4754 2.4893 1.8336.3643.3035.1457-.1032.0182-.0728-.164-.2733-1.3539-2.4467-1.445-2.4893-.6435-1.032-.17-.6194c-.0607-.255-.1032-.4674-.1032-.7285L6.287.1335 6.6997 0l.9957.1336.419.3642.6192 1.4147 1.0018 2.2282 1.5543 3.0296.4553.8985.2429.8318.091.255h.1579v-.1457l.1275-1.706.2368-2.0947.2307-2.6957.0789-.7589.3764-.9107.7468-.4918.5828.2793.4797.686-.0668.4433-.2853 1.8517-.5586 2.9021-.3643 1.9429h.2125l.2429-.2429.9835-1.3053 1.6514-2.0643.7286-.8196.85-.9046.5464-.4311h1.0321l.759 1.1293-.34 1.1657-1.0625 1.3478-.8804 1.1414-1.2628 1.7-.7893 1.36.0729.1093.1882-.0183 2.8535-.607 1.5421-.2794 1.8396-.3157.8318.3886.091.3946-.3278.8075-1.967.4857-2.3072.4614-3.4364.8136-.0425.0304.0486.0607 1.5482.1457.6618.0364h1.621l3.0175.2247.7892.522.4736.6376-.079.4857-1.2142.6193-1.6393-.3886-3.825-.9107-1.3113-.3279h-.1822v.1093l1.0929 1.0686 2.0035 1.8092 2.5075 2.3314.1275.5768-.3218.4554-.34-.0486-2.2039-1.6575-.85-.7468-1.9246-1.621h-.1275v.17l.4432.6496 2.3436 3.5214.1214 1.0807-.17.3521-.6071.2125-.6679-.1214-1.3721-1.9246L14.38 17.959l-1.1414-1.9428-.1397.079-.674 7.2552-.3156.3703-.7286.2793-.6071-.4614-.3218-.7468.3218-1.4753.3886-1.9246.3157-1.53.2853-1.9004.17-.6314-.0121-.0425-.1397.0182-1.4328 1.9672-2.1796 2.9446-1.7243 1.8456-.4128.164-.7164-.3704.0667-.6618.4008-.5889 2.386-3.0357 1.4389-1.882.929-1.0868-.0062-.1579h-.0546l-6.3385 4.1164-1.1293.1457-.4857-.4554.0608-.7467.2307-.2429 1.9064-1.3114Z"]};
+const ICO = Object.fromEntries(Object.entries(ICONS).map(([k, a]) => [k, a.map(d => new Path2D(d))]));
+function icon(c, name, x, y, size, color, stroke) {  // x, y — центр значка
+  c.save(); c.translate(x - size / 2, y - size / 2); c.scale(size / 24, size / 24);
+  for (const p of ICO[name]) { if (stroke) { c.strokeStyle = color; c.lineWidth = stroke * 24 / size; c.lineJoin = "round"; c.stroke(p); } else { c.fillStyle = color; c.fill(p); } }
+  c.restore();
+}
+
 // ── рисование ──
 function ctx(cv, w, h) { cv.width = w * S; cv.height = h * S; cv.style.width = w + "px"; const c = cv.getContext("2d"); c.scale(S, S); c.textBaseline = "top"; return c; }
 function rr(c, x, y, w, h, r) { c.beginPath(); c.roundRect(x, y, w, h, r); }
@@ -200,9 +209,7 @@ function pill(c, x, y, v, k) {  // красная плашка активнос�
   c.beginPath(); c.moveTo(x - 46 * k, y + 9 * k); c.lineTo(x - 36 * k, y); c.lineTo(x - 26 * k, y + 9 * k); c.fill();
   let cx = x - W + pad; const cy = y + 8 * k + H / 2;
   items.forEach(([t, n], i) => {
-    if (t === "c") bubble(c, cx + iw / 2, cy, iw * .92, "#fff");
-    if (t === "h") heart(c, cx + iw / 2, cy + k, iw, "#fff");
-    if (t === "p") person(c, cx + iw / 2, cy, iw * .92, "#fff");
+    icon(c, { c: "bubble", h: "heart", p: "user" }[t], cx + iw / 2, cy, iw * 1.05, "#fff");
     c.fillStyle = "#fff"; c.font = `600 ${17 * k}px ${SYS}`; c.textBaseline = "middle"; c.textAlign = "left"; c.fillText(n, cx + iw + 6 * k, cy + k);
     cx += ws[i] + gap;
   });
@@ -225,7 +232,7 @@ const T = [
      c.beginPath(); c.moveTo(P, 30); c.lineTo(P + 20, 30); c.moveTo(P + 10, 20); c.lineTo(P + 10, 40); c.stroke();
      c.fillStyle = "#fff"; c.font = `36px Script, cursive`; c.textBaseline = "middle"; const ww = c.measureText(v.word).width, wx = (W - ww) / 2 - 8;
      c.fillText(v.word, wx, 31); c.lineWidth = 1.8; c.beginPath(); c.moveTo(wx + ww + 8, 29); c.lineTo(wx + ww + 13, 34); c.lineTo(wx + ww + 18, 29); c.stroke();
-     heartPath(c, W - P - 12, 31, 26); c.lineWidth = 2.1; c.lineJoin = "round"; c.stroke();
+     icon(c, "heart", W - P - 12, 31, 30, "#fff", 2.1);
      if (v.dot) { c.fillStyle = "#FF0034"; c.beginPath(); c.arc(W - P - 1, 20, 4.2, 0, 7); c.fill(); }
      c.textBaseline = "top";
      const d = 62, cy = 104, fs = faces(+v.seed, 4), nk = nicks(+v.seed, 3), step = (W - 2 * P - d) / 3, xs = [0, 1, 2, 3].map(i => P + d / 2 + i * step);
@@ -255,7 +262,7 @@ const T = [
      c.font = `400 12.5px ${SYS}`; c.fillStyle = "#8E8E8E"; c.fillText(v.time, nx + 4, pad + 1);
      c.font = `400 14.5px ${SYS}`; c.fillStyle = L ? "#000" : "#F5F5F5"; tl.forEach((l, i) => c.fillText(l, tx, pad + 21 + i * 19));
      c.font = `600 12px ${SYS}`; c.fillStyle = "#8E8E8E"; c.fillText("Ответить", tx, pad + 21 + tl.length * 19 + 10);
-     heart(c, W - pad - 10, pad + 16, 15, "#FF3040");
+     icon(c, "heart", W - pad - 10, pad + 15, 15, "#FF3040");
      c.font = `400 11.5px ${SYS}`; c.textAlign = "center"; c.fillStyle = "#8E8E8E"; c.fillText(v.likes, W - pad - 10, pad + 28);
    } },
  { id: "ig-reactions", svc: "Инстаграм", dot: "#FF0034", title: "Реакции на сторис", hint: "коллаж 9:16 и твой текст",
@@ -270,7 +277,7 @@ const T = [
        if (r() < .18) ring(c, x + d / 2, y + d / 2, d / 2 + 2.2, 1.6);
        img(c, im, x, y, d);
        const bx = x + d - 3, by = y + d - 3; c.fillStyle = "#121212"; c.beginPath(); c.arc(bx, by, 8, 0, 7); c.fill();
-       if (v.fire && r() < .25) fire(c, bx, by, 12); else { c.fillStyle = "#FF3040"; c.beginPath(); c.arc(bx, by, 6.5, 0, 7); c.fill(); heart(c, bx, by + .4, 8, "#fff"); } });
+       if (v.fire && r() < .25) fire(c, bx, by, 12); else { c.fillStyle = "#FF3040"; c.beginPath(); c.arc(bx, by, 6.5, 0, 7); c.fill(); icon(c, "heart", bx, by + .3, 8.5, "#fff"); } });
      let y = y0 + rows * (d + gap) + 26;
      for (const ln of tl) {
        if (!ln) { y += 10; continue; }
@@ -327,7 +334,7 @@ const T = [
                 c.font = `400 15.5px ${SYS}`; c.fillStyle = "#9C9A92"; c.fillText("Размышляю…", pad + 26, y + 1); }
        else { c.fillStyle = "#ECECEC"; c.beginPath(); c.arc(pad + 7, y + 9, 7, 0, 7); c.fill(); }
      } else {
-       if (C) { spark(pad + 9, y + 9); y += 34; } else { rosette(pad + 11, y + 10, 10); y += 34; }
+       icon(c, C ? "claude" : "openai", pad + 11, y + 10, 22, C ? "#D97757" : "#ECECEC"); y += 34;
        c.font = af; c.fillStyle = C ? "#E8E6DC" : "#ECECEC"; al.forEach((l, i) => c.fillText(l, pad, y + i * lh));
      }
    } },
@@ -366,7 +373,27 @@ const T = [
                       c.fillStyle = "#005BFF"; c.fillText(v.variant, pad + c.measureText("Вариант товара: ").width, y); y += 26; }
      c.font = `400 14px ${SYS}`; c.fillStyle = "#070707"; tl.forEach(t => { c.fillText(t, pad, y); y += 18; });
    } },
- { id: "avito", svc: "Авито", dot: "#00AAFF", title: "Отзыв", hint: "в работе — следующим", when: "делаем", soon: true, f: [] },
+ { id: "avito", svc: "Авито", dot: "#00AAFF", title: "Отзыв", hint: "сделка, звёзды, ответ продавца",
+   f: [AVA, SEED, { k: "nick", t: "text", l: "Имя (пусто — случайное)", v: "" }, { k: "date", t: "text", l: "Дата", v: "28 апреля", half: 1 }, { k: "rate", t: "stars", l: "Оценка", v: 5, half: 1 },
+       { k: "deal", t: "text", l: "Что купили", v: "Кроссовки Nike Air Max, 42 размер" },
+       { k: "text", t: "area", l: "Отзыв", v: "Всё как в описании, состояние отличное. Отправил в тот же день, упаковал на совесть. Рекомендую продавца!" },
+       { k: "seller", t: "text", l: "Продавец (для ответа)", v: "Максим", half: 1 }, { k: "answer", t: "text", l: "Ответ продавца", v: "Спасибо за отзыв 🤝", half: 1 }],
+   draw(cv, v) {
+     const W = 400, pad = 18, F = `400 15px M, ${SYS}`, tl = wrap(F, v.text, W - pad * 2), nick = v.nick || name1(+v.seed + 9);
+     MEAS.font = `400 15px M, ${SYS}`; const dl = wrap(`400 15px M, ${SYS}`, "Сделка состоялась · " + v.deal, W - pad * 2 - 96);
+     const H = pad + 42 + 10 + dl.length * 22 + 10 + tl.length * 22 + (v.answer ? 24 + 42 + 26 : 0) + pad, c = ctx(cv, W, H);
+     rr(c, 0, 0, W, H, 16); c.fillStyle = "#FFFFFF"; c.fill();
+     img(c, mainFace(v), pad, pad, 32);
+     c.font = `700 16px M, ${SYS}`; c.fillStyle = "#000"; c.fillText(nick, pad + 42, pad - 1);
+     c.font = `400 13px M, ${SYS}`; c.fillStyle = "#757575"; c.fillText(v.date + " · Покупатель", pad + 42, pad + 20);
+     let y = pad + 46; stars(c, pad, y + 2, 16, 1, v.rate, "#FCC600", "#E3E3E3");
+     c.font = `400 15px M, ${SYS}`; c.fillStyle = "#757575"; dl.forEach((l, i) => c.fillText(l, i ? pad : pad + 88, y + i * 22)); y += dl.length * 22 + 10;
+     c.fillStyle = "#000"; tl.forEach(l => { c.fillText(l, pad, y); y += 22; });
+     if (v.answer) { y += 16; const x = pad + 38; img(c, faces(+v.seed + 99, 1)[0], x, y, 32);
+       c.font = `700 16px M, ${SYS}`; c.fillStyle = "#000"; c.fillText(v.seller, x + 42, y - 1);
+       c.font = `400 13px M, ${SYS}`; c.fillStyle = "#757575"; c.fillText(v.date, x + 42, y + 20);
+       c.font = F; c.fillStyle = "#000"; c.fillText(v.answer, x, y + 44); }
+   } },
 ];
 
 // ── экраны ──
