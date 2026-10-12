@@ -593,7 +593,8 @@ $("save").onclick = async () => {
   try {
     const r = await fetch(API + "/api/send", { method: "POST", body: JSON.stringify({ init: tg.initData, png, name: cur.id }) }).then(r => r.json());
     saved = r;
-    $("msg").textContent = r.ok ? "✓ Файл уже в чате с ботом — оттуда сохраняй или пересылай" : "Не получилось отправить — зажми картинку и сохрани";
+    $("msg").textContent = r.ok ? "✓ Файл уже в чате с ботом — оттуда сохраняй или пересылай"
+      : r.limit ? "Бесплатные 3 на сегодня закончились — в чате с ботом есть ⭐ Премиум" : "Не получилось отправить — зажми картинку и сохрани";
     if (r.ok && tg.isVersionAtLeast && tg.isVersionAtLeast("8.0")) $("dl").classList.remove("hide");
     tg.HapticFeedback && tg.HapticFeedback.notificationOccurred(r.ok ? "success" : "error");
   } catch (e) { $("msg").textContent = "Нет связи с сервером — зажми картинку, чтобы сохранить"; }
