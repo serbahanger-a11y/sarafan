@@ -252,7 +252,7 @@ function pill(c, x, y, v, k) {  // красная плашка активнос�
 // ── шаблоны: поля + отрисовка. Всё заполнено «как в жизни», чтобы можно было сохранить сразу ──
 const SEED = { k: "seed", t: "dice" }, AVA = { k: "ava", t: "ava" };
 const LIGHT = v => ({ k: "light", t: "check", l: "Светлая тема", v });
-const ACC = {"Инстаграм":{bg:"linear-gradient(90deg,#FFB03B,#FF5A36 35%,#F6216B 70%,#C21BD3)",ink:"#fff",glow:"#F6216B"},"Threads":{bg:"#F3F5F7",ink:"#101010",glow:"#F3F5F7"},"X (Twitter)":{bg:"#1D9BF0",ink:"#fff",glow:"#1D9BF0"},"Нейросеть":{bg:"#10A37F",ink:"#fff",glow:"#10A37F"},"Wildberries":{bg:"linear-gradient(90deg,#CB11AB,#7B1FD0)",ink:"#fff",glow:"#CB11AB"},"Ozon":{bg:"#005BFF",ink:"#fff",glow:"#005BFF"},"Авито":{bg:"linear-gradient(90deg,#00AAFF,#97CF26)",ink:"#fff",glow:"#00AAFF"}};
+const ACC = {"Telegram":{bg:"#2AABEE",ink:"#fff",glow:"#2AABEE"},"Уведомление":{bg:"#F2F2F7",ink:"#111",glow:"#8E8E93"},"Инстаграм":{bg:"linear-gradient(90deg,#FFB03B,#FF5A36 35%,#F6216B 70%,#C21BD3)",ink:"#fff",glow:"#F6216B"},"Threads":{bg:"#F3F5F7",ink:"#101010",glow:"#F3F5F7"},"X (Twitter)":{bg:"#1D9BF0",ink:"#fff",glow:"#1D9BF0"},"Нейросеть":{bg:"#10A37F",ink:"#fff",glow:"#10A37F"},"Wildberries":{bg:"linear-gradient(90deg,#CB11AB,#7B1FD0)",ink:"#fff",glow:"#CB11AB"},"Ozon":{bg:"#005BFF",ink:"#fff",glow:"#005BFF"},"Авито":{bg:"linear-gradient(90deg,#00AAFF,#97CF26)",ink:"#fff",glow:"#00AAFF"}};
 const T = [
  { id: "ig-stories", svc: "Инстаграм", dot: "#FF0034", title: "Шапка со сторис", hint: "кружки, плашка лайков",
    f: [AVA, SEED, { k: "word", t: "text", l: "Надпись сверху", v: "Instagram" },
@@ -371,6 +371,43 @@ const T = [
        c.font = af; c.fillStyle = C ? "#E8E6DC" : "#ECECEC"; al.forEach((l, i) => c.fillText(l, pad, y + i * lh));
      }
    } },
+ { id: "tg-chat", svc: "Telegram", dot: "#2AABEE", title: "Переписка", hint: "пузыри, как в чате",
+   f: [{ k: "msgs", t: "area", l: "Сообщения (> в начале — твоё, справа)", v: "ты где\n> уже выхожу\nты это писал час назад\n> ну я морально выхожу\nпонятно 🙂" },
+       { k: "time", t: "text", l: "Время", v: "23:41", half: 1 }, { k: "read", t: "check", l: "Прочитано ✓✓", v: true }],
+   draw(cv, v) {
+     const W = 390, pad = 12, F = `400 16px ${SYS}`, maxW = W * .72;
+     const msgs = String(v.msgs).split("\n").filter(Boolean).map(l => ({ me: l.startsWith(">"), t: l.replace(/^>\s*/, "") }));
+     const lay = msgs.map(m => { const ls = wrap(F, m.t, maxW - 70); MEAS.font = F; const w = Math.max(...ls.map(x => MEAS.measureText(x).width));
+       const inline = ls.length === 1 && w + 70 < maxW; return { ...m, ls, w: Math.min(maxW, w + (inline ? 70 : 24)), h: ls.length * 21 + (inline ? 14 : 30) }; });
+     const H = pad + lay.reduce((a, m, i) => a + m.h + (i && lay[i - 1].me !== m.me ? 8 : 3), 0) + pad, c = ctx(cv, W, H);
+     const g = c.createLinearGradient(0, 0, W, H); g.addColorStop(0, "#1E3A2F"); g.addColorStop(1, "#2B3A4A");
+     rr(c, 0, 0, W, H, 18); c.fillStyle = g; c.fill();
+     let y = pad;
+     lay.forEach((m, i) => { if (i) y += lay[i - 1].me !== m.me ? 8 : 3;
+       const x = m.me ? W - pad - m.w : pad; rr(c, x, y, m.w, m.h, 17); c.fillStyle = m.me ? "#2B5278" : "#182533"; c.fill();
+       c.font = F; c.fillStyle = "#FFFFFF"; m.ls.forEach((l, j) => c.fillText(l, x + 12, y + 7 + j * 21));
+       c.font = `400 12px ${SYS}`; c.fillStyle = m.me ? "#7DA8D3" : "#6D7F8F"; c.textAlign = "right";
+       const tx = x + m.w - (m.me ? 26 : 10), ty = y + m.h - 18; c.fillText(v.time, tx, ty);
+       if (m.me) { c.strokeStyle = v.read ? "#5DB3F7" : "#7DA8D3"; c.lineWidth = 1.5; c.lineCap = c.lineJoin = "round";
+         const k = v.read ? [0, 5] : [0]; k.forEach(dx => { c.beginPath(); c.moveTo(tx + 5 + dx, ty + 7); c.lineTo(tx + 8 + dx, ty + 10); c.lineTo(tx + 14 + dx, ty + 3); c.stroke(); }); }
+       c.textAlign = "left"; y += m.h; });
+   } },
+ { id: "push", svc: "Уведомление", dot: "#8E8E93", title: "Пуш на экране", hint: "любое приложение",
+   f: [{ k: "app", t: "text", l: "Приложение", v: "Мама", half: 1 }, { k: "when", t: "text", l: "Когда", v: "сейчас", half: 1 },
+       { k: "title", t: "text", l: "Заголовок", v: "" }, { k: "body", t: "area", l: "Текст", v: "Ты поел? Я видела, ты был в сети, а мне не ответил" },
+       { k: "color", t: "text", l: "Цвет значка", v: "#34C759", half: 1 }, { k: "letter", t: "text", l: "Буква на значке", v: "М", half: 1 }],
+   draw(cv, v) {
+     const W = 380, pad = 14, ic = 38, tw = W - pad * 2 - ic - 12, bl = wrap(`400 15px ${SYS}`, v.body, tw);
+     const H = pad + (v.title ? 40 : 20) + bl.length * 20 + pad + 2, c = ctx(cv, W, H);
+     rr(c, 0, 0, W, H, 22); c.fillStyle = "rgba(242,242,247,.93)"; c.fill();
+     rr(c, pad, pad, ic, ic, 9); c.fillStyle = v.color || "#34C759"; c.fill();
+     c.fillStyle = "#fff"; c.font = `700 20px ${SYS}`; c.textAlign = "center"; c.textBaseline = "middle"; c.fillText(v.letter || "", pad + ic / 2, pad + ic / 2 + 1);
+     c.textAlign = "left"; c.textBaseline = "top"; const x = pad + ic + 12;
+     c.font = `600 15px ${SYS}`; c.fillStyle = "#000"; c.fillText(v.app, x, pad + 1);
+     c.font = `400 13px ${SYS}`; c.fillStyle = "#6E6E73"; c.textAlign = "right"; c.fillText(v.when, W - pad, pad + 2); c.textAlign = "left";
+     let y = pad + 21; if (v.title) { c.font = `600 15px ${SYS}`; c.fillStyle = "#000"; c.fillText(v.title, x, y); y += 20; }
+     c.font = `400 15px ${SYS}`; c.fillStyle = "#000"; bl.forEach(l => { c.fillText(l, x, y); y += 20; });
+   } },
  // WB и Ozon: размеры, цвета, жирность сняты с живых страниц 12.10.2026 (мобильная версия)
  { id: "wb", svc: "Wildberries", dot: "#CB11AB", title: "Отзыв", hint: "звёзды, «Выкупили»",
    f: [AVA, SEED, { k: "nick", t: "text", l: "Имя (пусто — случайное)", v: "" }, { k: "date", t: "text", l: "Дата", v: "9 октября, 21:14", half: 1 }, { k: "rate", t: "stars", l: "Оценка", v: 5, half: 1 },
@@ -437,7 +474,7 @@ let cur = null;
 function refresh() { cur ? draw() : renderHome(); }
 
 const GROUPS = { "Все": () => true, "Инстаграм": t => t.svc === "Инстаграм", "Отзывы": t => ["Wildberries", "Ozon", "Авито"].includes(t.svc),
-                 "Посты": t => ["Threads", "X (Twitter)"].includes(t.svc), "Нейросети": t => t.svc === "Нейросеть" };
+                 "Посты": t => ["Threads", "X (Twitter)", "Telegram", "Уведомление"].includes(t.svc), "Нейросети": t => t.svc === "Нейросеть" };
 let group = "Все";
 function renderFan() {
   $("fan").innerHTML = ["ig-comment", "wb", "ig-notif"].map(id => { const t = T.find(x => x.id === id), cv = document.createElement("canvas");
