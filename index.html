@@ -48,7 +48,7 @@ h2 { font: 800 22px/1 G, sans-serif; letter-spacing: -.02em; text-transform: upp
 .tip2 { display: block; margin-top: 4px; font-size: 12px; opacity: .7; }
 .chip { display: inline-flex; align-items: center; gap: 7px; }
 .chip i { width: 14px; height: 14px; border-radius: 4px; background: var(--a); }
-.chip .lg, .tile .svc .lg { width: 16px; height: 16px; object-fit: contain; }
+.chip .lg, .tile .svc .lg { width: 16px; height: 16px; object-fit: contain; border-radius: 4px; }
 .tip { color: var(--mute); font-size: 13px; margin: -6px 0 16px; }
 .top { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
 .back { width: 40px; height: 40px; border-radius: 12px; border: 1px solid var(--line); background: var(--card); color: var(--text); font: 600 18px G, sans-serif; flex: none; }
@@ -184,7 +184,7 @@ const MEAS = document.createElement("canvas").getContext("2d"), MINI = document.
 
 // ── лица и имена: всё заполнено заранее, «🎲» перемешивает ──
 let FACES = [], userAva = null;
-const LOGO = { "Инстаграм": "logos/instagram-icon.svg", "Telegram": "logos/telegram.svg", "Нейросеть": "logos/openai-icon.svg" };
+const LOGO = { "Инстаграм": "logos/instagram-icon.svg", "Telegram": "logos/telegram.svg", "Нейросеть": "logos/openai-icon.svg", "Threads": "logos/threads.svg", "X (Twitter)": "logos/x.svg", "Wildberries": "logos/wb.png", "Ozon": "logos/ozon.png", "Авито": "logos/avito.png", "Уведомление": "logos/bell.svg" };
 const IGW = new Image(); IGW.onload = () => refresh(); IGW.src = "logos/instagram-word.svg";  // фирменная надпись Instagram
 const TGP = {};  // узоры обоев Telegram (настоящие, из API Telegram), грузятся при первом выборе
 const tgp = n => { if (!TGP[n]) { TGP[n] = new Image(); TGP[n].onload = () => refresh(); TGP[n].src = `tg/${n}.svg`; } return TGP[n]; };
