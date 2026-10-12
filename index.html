@@ -155,19 +155,32 @@ const MEAS = document.createElement("canvas").getContext("2d"), MINI = document.
 
 // ── лица и имена: всё заполнено заранее, «🎲» перемешивает ──
 let FACES = [], userAva = null;
+const TGP = new Image(); TGP.onload = () => refresh(); TGP.src = "tg/pattern.svg";
 const FV = "v=4"; fetch("faces/index.json?" + FV, { cache: "no-store" }).then(r => r.json()).then(list => {
   let left = list.length;
-  FACES = list.map(f => { const im = new Image(); im.onload = im.onerror = () => { if (--left === 0) refresh(); }; im.src = "faces/" + f + "?" + FV; return im; });
+  FACES = list.map(f => { const im = new Image(); im.g = FG[parseInt(f.slice(1, 4)) - 1]; im.onload = im.onerror = () => { if (--left === 0) refresh(); }; im.src = "faces/" + f + "?" + FV; return im; });
 });
+const FG = "fmfmfmfmffmfmfmfmffmxmfxfmxfmfmfmfmmmfmfmfmfmfmffmfmmffmfmfmfmffmmmffmfmfmfmfmmfmfmfmfmfmf";
 const NICKS = ["kate.sokolova", "dima_orlov", "alina.vibe", "max.frost", "lera_prt", "nikita.vs", "sonya_mrr", "artem.rzn", "polina.kiss", "vlad_kr",
   "masha.zhu", "egor.pav", "anya_lvn", "ilya.grom", "dasha.moon", "kirill_tt", "vika.art", "sasha.no", "liza_dream", "roma.kot", "ksu.flow", "timur_88",
   "yana.sun", "denis.vlg", "olya.mint", "gleb_off", "nastya.v", "misha.drive", "alena_pro", "stas.wave"];
 const NAMES = ["Анна", "Мария", "Дмитрий", "Екатерина", "Алексей", "Ольга", "Сергей", "Наталья", "Иван", "Юлия", "Михаил", "Ксения", "Артём", "Полина"];
+// у человека в карточке лицо, ник и имя одного пола — иначе «masha» с мужским лицом
+const SEXN = { f: ["kate.sokolova", "alina.vibe", "lera_prt", "sonya_mrr", "polina.kiss", "masha.zhu", "anya_lvn", "dasha.moon", "vika.art", "liza_dream", "ksu.flow", "yana.sun", "olya.mint", "nastya.v", "alena_pro"],
+  m: ["dima_orlov", "max.frost", "nikita.vs", "artem.rzn", "vlad_kr", "egor.pav", "ilya.grom", "kirill_tt", "sasha.no", "roma.kot", "timur_88", "denis.vlg", "gleb_off", "misha.drive", "stas.wave"] };
+const SEXNAME = { f: ["Анна", "Мария", "Екатерина", "Ольга", "Наталья", "Юлия", "Ксения", "Полина"], m: ["Дмитрий", "Алексей", "Сергей", "Иван", "Михаил", "Артём"] };
 function rnd(seed) { let x = (seed % 233280 + 233280) % 233280 || 1; return () => (x = (x * 9301 + 49297) % 233280) / 233280; }
 function shuffled(arr, seed) { const a = arr.slice(), r = rnd(seed); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
 const faces = (seed, n) => { const a = shuffled(FACES, seed); return Array.from({ length: n }, (_, i) => a[i % Math.max(1, a.length)]); };
 const nicks = (seed, n) => shuffled(NICKS, seed + 7).slice(0, n);
 const name1 = seed => shuffled(NAMES, seed + 3)[0];
+const sexOf = v => v.sex || (rnd(+v.seed + 5)() < .5 ? "f" : "m");
+const faceOf = (seed, g) => shuffled(FACES.filter(im => im.g === g), seed)[0];
+const nickOf = (seed, g) => shuffled(SEXN[g], seed + 7)[0];
+const nameOf = (seed, g) => shuffled(SEXNAME[g], seed + 3)[0];
+const people = (seed, n) => { const r = rnd(seed + 13), fs = { f: shuffled(FACES.filter(im => im.g === "f"), seed), m: shuffled(FACES.filter(im => im.g === "m"), seed) },
+  ns = { f: shuffled(SEXN.f, seed + 7), m: shuffled(SEXN.m, seed + 7) }, k = { f: 0, m: 0 };
+  return Array.from({ length: n }, () => { const g = r() < .55 ? "f" : "m", i = k[g]++; return { face: fs[g][i % Math.max(1, fs[g].length)], nick: ns[g][i % ns[g].length] }; }); };
 const fmt = n => String(n).replace(/\B(?=(\d{3})+(?!\d))/g, " ");
 
 // векторные значки из открытых наборов (Tabler Icons, Simple Icons), сетка 24×24
@@ -199,7 +212,7 @@ function img(c, im, x, y, d) {  // круглая аватарка
   else { c.fillStyle = "#2A2A2A"; c.fillRect(x, y, d, d); }
   c.restore();
 }
-const mainFace = v => userAva || faces(+v.seed, 1)[0];
+const mainFace = v => userAva || faceOf(+v.seed, sexOf(v));
 function badge(c, x, y, r, color) {  // галочка верификации: зубчатый круг + белая галка
   c.beginPath();
   for (let i = 0; i < 24; i++) { const a = i * Math.PI / 12, rad = i % 2 ? r * .86 : r; c.lineTo(x + Math.cos(a) * rad, y + Math.sin(a) * rad); }
@@ -264,6 +277,7 @@ function pill(c, x, y, v, k) {  // красная плашка активнос�
 }
 
 // ── шаблоны: поля + отрисовка. Всё заполнено «как в жизни», чтобы можно было сохранить сразу ──
+const SEX = v => ({ k: "sex", t: "choice", l: "Кто пишет", v, opts: [["f", "Девушка"], ["m", "Парень"]] });
 const SEED = { k: "seed", t: "dice" }, AVA = { k: "ava", t: "ava" };
 const LIGHT = v => ({ k: "light", t: "check", l: "Светлая тема", v });
 const PAL = ["#34C759", "#0A84FF", "#FF3B30", "#FF9500", "#AF52DE", "#FF2D55", "#5AC8FA", "#1C1C1E"];  // цвета значков iOS
@@ -282,7 +296,7 @@ const T = [
      icon(c, "heart", W - 30, 31, 30, "#fff", 2.1);
      if (v.dot) { c.fillStyle = "#FF0034"; c.beginPath(); c.arc(W - 18, 19, 4.4, 0, 7); c.fill(); }
      c.textBaseline = "top";
-     const R = 43, d = 78, cy = 66 + R, step = 94, fs = faces(+v.seed, 5), nk = nicks(+v.seed, 4), xs = [0, 1, 2, 3, 4].map(i => 12 + R + i * step);
+     const R = 43, d = 78, cy = 66 + R, step = 94, pp = people(+v.seed, 4), fs = [faces(+v.seed, 1)[0], ...pp.map(q => q.face)], nk = pp.map(q => q.nick), xs = [0, 1, 2, 3, 4].map(i => 12 + R + i * step);
      c.beginPath(); c.arc(xs[0], cy, R, 0, 7); c.strokeStyle = "#3A3A3C"; c.lineWidth = 1.5; c.stroke();
      img(c, userAva || fs[0], xs[0] - d / 2, cy - d / 2, d);
      c.fillStyle = "#fff"; c.beginPath(); c.arc(xs[0] + 28, cy + 28, 12, 0, 7); c.fill(); c.strokeStyle = "#000"; c.lineWidth = 3.5; c.stroke();
@@ -298,11 +312,11 @@ const T = [
    f: [{ k: "nc", t: "text", l: "Комментарии", v: "12", half: 1 }, { k: "nl", t: "text", l: "Лайки", v: "148", half: 1 }, { k: "nf", t: "text", l: "Подписчики", v: "31", half: 1 }],
    draw(cv, v) { const c0 = ctx(MINI, 600, 80), w = pill(c0, 600, 0, v, 1); const c = ctx(cv, w + 2, 56); pill(c, w + 1, 0, v, 1); } },
  { id: "ig-comment", svc: "Инстаграм", dot: "#FF0034", title: "Комментарий", hint: "под рилсом",
-   f: [AVA, SEED, { k: "nick", t: "text", l: "Ник (пусто — случайный)", v: "" }, { k: "text", t: "area", l: "Текст", v: "Это лучшее, что я видела за неделю 😭🔥 Где ты был раньше?" },
+   f: [AVA, SEED, SEX("f"), { k: "nick", t: "text", l: "Ник (пусто — случайный)", v: "" }, { k: "text", t: "area", l: "Текст", v: "Это лучшее, что я видела за неделю 😭🔥 Где ты был раньше?" },
        { k: "time", t: "text", l: "Когда", v: "3 ч.", half: 1 }, { k: "likes", t: "text", l: "Лайки", v: "2 418", half: 1 },
        { k: "ver", t: "check", l: "Синяя галочка", v: false }, LIGHT(false)],
    draw(cv, v) {
-     const L = v.light, W = 360, pad = 16, av = 38, tx = pad + av + 12, tl = wrap(`400 14.5px ${SYS}`, v.text, W - tx - 44), nick = v.nick || nicks(+v.seed, 1)[0];
+     const L = v.light, W = 360, pad = 16, av = 38, tx = pad + av + 12, tl = wrap(`400 14.5px ${SYS}`, v.text, W - tx - 44), nick = v.nick || nickOf(+v.seed, sexOf(v));
      const H = pad + 22 + tl.length * 19 + 10 + 16 + pad, c = ctx(cv, W, H);
      rr(c, 0, 0, W, H, 20); c.fillStyle = L ? "#FFFFFF" : "#262626"; c.fill(); img(c, mainFace(v), pad, pad, av);
      c.font = `600 13.5px ${SYS}`; c.fillStyle = L ? "#000" : "#F5F5F5"; c.fillText(nick, tx, pad);
@@ -346,10 +360,10 @@ const T = [
        y += LH; }
    } },
  { id: "threads", svc: "Threads", dot: "#F3F5F7", title: "Пост", hint: "карточка, как в сторис",
-   f: [AVA, SEED, { k: "nick", t: "text", l: "Ник (пусто — случайный)", v: "" }, { k: "text", t: "area", l: "Текст", v: "Поставил будильник на 6 утра, чтобы начать новую жизнь. Новая жизнь началась в 11:40." },
+   f: [AVA, SEED, SEX("m"), { k: "nick", t: "text", l: "Ник (пусто — случайный)", v: "" }, { k: "text", t: "area", l: "Текст", v: "Поставил будильник на 6 утра, чтобы начать новую жизнь. Новая жизнь началась в 11:40." },
        { k: "ver", t: "check", l: "Синяя галочка", v: true }, LIGHT(true)],
    draw(cv, v) {
-     const L = v.light, W = 380, pad = 18, av = 36, tl = wrap(`400 15px ${SYS}`, v.text, W - pad * 2), nick = v.nick || nicks(+v.seed, 1)[0];
+     const L = v.light, W = 380, pad = 18, av = 36, tl = wrap(`400 15px ${SYS}`, v.text, W - pad * 2), nick = v.nick || nickOf(+v.seed, sexOf(v));
      const H = pad + av + 12 + tl.length * 21 + pad, c = ctx(cv, W, H), ink = L ? "#000" : "#F3F5F7";
      rr(c, 0, 0, W, H, 16); c.fillStyle = L ? "#FFFFFF" : "#101010"; c.fill(); img(c, mainFace(v), pad, pad, av);
      c.textBaseline = "middle"; c.font = `600 15px ${SYS}`; c.fillStyle = ink; c.fillText(nick, pad + av + 10, pad + av / 2);
@@ -358,7 +372,7 @@ const T = [
      c.textAlign = "left"; c.textBaseline = "top"; c.font = `400 15px ${SYS}`; tl.forEach((l, i) => c.fillText(l, pad, pad + av + 12 + i * 21));
    } },
  { id: "x-post", svc: "X (Twitter)", dot: "#1D9BF0", title: "Пост", hint: "как скрин из ленты",
-   f: [AVA, SEED, { k: "name", t: "text", l: "Имя", v: "Аркадий Петров", half: 1 }, { k: "handle", t: "text", l: "Ник", v: "@arkady_petrov", half: 1 },
+   f: [AVA, SEED, SEX("m"), { k: "name", t: "text", l: "Имя", v: "Аркадий Петров", half: 1 }, { k: "handle", t: "text", l: "Ник", v: "@arkady_petrov", half: 1 },
        { k: "text", t: "area", l: "Текст", v: "Официально: с понедельника начинаю новую жизнь. Источник — я, каждое воскресенье с 2019 года." },
        { k: "ver", t: "check", l: "Галочка", v: true }, LIGHT(true)],
    draw(cv, v) {
@@ -399,12 +413,16 @@ const T = [
    } },
  { id: "tg-chat", svc: "Telegram", dot: "#2AABEE", title: "Переписка", hint: "пузыри, аватарки, галочки",
    f: [SEED, { k: "msgs", t: "msgs", l: "Сообщения", v: [{ me: 0, t: "ты где" }, { me: 1, t: "уже выхожу" }, { me: 0, t: "ты это писал час назад" }, { me: 1, t: "ну я морально выхожу" }, { me: 0, t: "понятно 🙂" }] },
+       { k: "theme", t: "choice", l: "Тема", v: "light", opts: [["light", "Светлая"], ["dark", "Тёмная"]] }, { k: "sex", t: "choice", l: "Собеседник", v: "f", opts: [["f", "Девушка"], ["m", "Парень"]] },
        { k: "who", t: "text", l: "Имя собеседника", v: "Аня", half: 1 }, { k: "time", t: "text", l: "Время", v: "23:41", half: 1 },
        { k: "head", t: "check", l: "Шапка чата с именем", v: true }, { k: "ava", t: "check", l: "Аватарка у собеседника", v: true }, { k: "read", t: "check", l: "Прочитано ✓✓", v: true }],
    draw(cv, v) {
      const W = 390, F = `400 16px ${SYS}`, LH = 21, TF = `400 11.5px ${SYS}`, maxT = 252, hH = v.head ? 58 : 0, aw = v.ava ? 38 : 0;
      const msgs = (v.msgs || []).filter(m => m.t);
      MEAS.font = TF; const tw = MEAS.measureText(v.time).width + 6;
+     const D = v.theme === "dark", K = D
+       ? { inB: "#182533", outB: "#2B5278", txt: "#FFFFFF", inT: "#6D7F8F", outT: "#7DA8D3", tick: "#64B5EF", head: "rgba(23,33,43,.97)", line: "#0B121A", name: "#FFFFFF", sub: "#6D7F8F", back: "#64B5EF" }
+       : { inB: "#FFFFFF", outB: "#E1FEC6", txt: "#000000", inT: "#A1AAB3", outT: "#5DB84F", tick: "#4FAE4E", head: "rgba(248,248,248,.96)", line: "#D7D7D9", name: "#000000", sub: "#8E8E93", back: "#007AFF" };
      const lay = msgs.map((m, i) => {
        const ls = wrap(F, m.t, maxT); MEAS.font = F; const last = MEAS.measureText(ls[ls.length - 1]).width, wid = Math.max(...ls.map(x => MEAS.measureText(x).width));
        const meta = tw + (m.me ? 20 : 0), inline = last + meta + 8 <= maxT;   // время помещается в последнюю строку?
@@ -412,27 +430,33 @@ const T = [
        return { ...m, ls, w, h, tail: !msgs[i + 1] || msgs[i + 1].me !== m.me };
      });
      const H = hH + 14 + lay.reduce((a, m, i) => a + m.h + (i && lay[i - 1].me !== m.me ? 10 : 3), 0) + 16, c = ctx(cv, W, H);
-     // обои: тёмный градиент + едва видимый рисунок
+     // обои Telegram: градиент из 4 цветов + фирменный узор (светлая — зелёные «по умолчанию», тёмная — узор проступает на тёмном)
      c.save(); rr(c, 0, 0, W, H, 18); c.clip();
-     const g = c.createLinearGradient(0, 0, W, H); g.addColorStop(0, "#1D2C3B"); g.addColorStop(.55, "#15202B"); g.addColorStop(1, "#1B2A2A"); c.fillStyle = g; c.fillRect(0, 0, W, H);
-     const r = rnd(42); for (let i = 0; i < 46; i++) { const x = r() * W, y = r() * H, k = r();
-       c.globalAlpha = .07; if (k < .33) icon(c, "heart", x, y, 14, "#9FC3E0", 1.4); else if (k < .66) { c.strokeStyle = "#9FC3E0"; c.lineWidth = 1.4; c.beginPath(); c.arc(x, y, 6, 0, 7); c.stroke(); } else star(c, x, y, 6, "#9FC3E0"); }
+     if (D) { c.fillStyle = "#0E1621"; c.fillRect(0, 0, W, H); }
+     else { c.fillStyle = "#B7C79A"; c.fillRect(0, 0, W, H);
+       [["#DBDDBB", 0, 0], ["#6BA587", W, H * .35], ["#D5D88D", 0, H * .75], ["#88B884", W, H]].forEach(([col, x, y]) => {
+         const g = c.createRadialGradient(x, y, 0, x, y, Math.max(W, H) * .8); g.addColorStop(0, col); g.addColorStop(1, col + "00"); c.fillStyle = g; c.fillRect(0, 0, W, H); }); }
+     if (TGP.complete && TGP.naturalWidth) { const tw = 480, th = tw * 2960 / 1440;
+       c.globalAlpha = D ? .1 : .22; if (D) c.filter = "invert(1)";
+       for (let yy = 0; yy < H; yy += th) for (let xx = -40; xx < W; xx += tw) c.drawImage(TGP, xx, yy, tw, th);
+       c.filter = "none"; }
      c.globalAlpha = 1;
-     const face = faces(+v.seed, 1)[0];
-     if (v.head) { c.fillStyle = "rgba(26,36,48,.96)"; c.fillRect(0, 0, W, hH); c.fillStyle = "#2B3A4A"; c.fillRect(0, hH - .5, W, .5);
-       c.strokeStyle = "#5EB5F7"; c.lineWidth = 2.4; c.lineCap = c.lineJoin = "round"; c.beginPath(); c.moveTo(24, 20); c.lineTo(15, 29); c.lineTo(24, 38); c.stroke();
-       c.textAlign = "center"; c.font = `600 16px ${SYS}`; c.fillStyle = "#FFF"; c.fillText(v.who, W / 2, 12);
-       c.font = `400 13px ${SYS}`; c.fillStyle = "#7C93A8"; c.fillText("был(а) недавно", W / 2, 32); c.textAlign = "left"; img(c, face, W - 52, 10, 38); }
+     const face = faceOf(+v.seed, v.sex || "f");
+     if (v.head) { c.fillStyle = K.head; c.fillRect(0, 0, W, hH); c.fillStyle = K.line; c.fillRect(0, hH - .5, W, .5);
+       c.strokeStyle = K.back; c.lineWidth = 2.4; c.lineCap = c.lineJoin = "round"; c.beginPath(); c.moveTo(24, 20); c.lineTo(15, 29); c.lineTo(24, 38); c.stroke();
+       c.textAlign = "center"; c.font = `600 16px ${SYS}`; c.fillStyle = K.name; c.fillText(v.who, W / 2, 12);
+       c.font = `400 13px ${SYS}`; c.fillStyle = K.sub; c.fillText((v.sex || "f") === "m" ? "был недавно" : "была недавно", W / 2, 32); c.textAlign = "left"; img(c, face, W - 52, 10, 38); }
      let y = hH + 14;
      lay.forEach((m, i) => { if (i) y += lay[i - 1].me !== m.me ? 10 : 3;
-       const x = m.me ? W - 10 - m.w : 10 + aw, bg = m.me ? "#2B5278" : "#1F2C3A", R = 17, sr = m.tail ? 5 : R;
+       const x = m.me ? W - 10 - m.w : 10 + aw, bg = m.me ? K.outB : K.inB, R = 17, sr = m.tail ? 5 : R;
        c.fillStyle = bg; rr(c, x, y, m.w, m.h, m.me ? [R, R, sr, R] : [R, R, R, sr]); c.fill();
        if (m.tail) { c.beginPath(); if (m.me) { c.moveTo(x + m.w - 8, y + m.h); c.quadraticCurveTo(x + m.w + 2, y + m.h, x + m.w + 7, y + m.h - 1); c.quadraticCurveTo(x + m.w, y + m.h - 6, x + m.w, y + m.h - 14); }
          else { c.moveTo(x + 8, y + m.h); c.quadraticCurveTo(x - 2, y + m.h, x - 7, y + m.h - 1); c.quadraticCurveTo(x, y + m.h - 6, x, y + m.h - 14); } c.fill();
          if (!m.me && v.ava) img(c, face, 8, y + m.h - 32, 32); }
-       c.font = F; c.fillStyle = "#FFFFFF"; m.ls.forEach((l, j) => c.fillText(l, x + 12, y + 7 + j * LH));
-       c.font = TF; c.fillStyle = m.me ? "#7EAAD8" : "#6F8597"; c.textAlign = "right"; const tx = x + m.w - (m.me ? 30 : 11), ty = y + m.h - 18; c.fillText(v.time, tx, ty); c.textAlign = "left";
-       if (m.me) { c.strokeStyle = v.read ? "#68B7F5" : "#7EAAD8"; c.lineWidth = 1.5; c.lineCap = c.lineJoin = "round";
+       if (!D) { c.save(); c.shadowColor = "rgba(0,0,0,.12)"; c.shadowOffsetY = 1; c.shadowBlur = 1; rr(c, x, y, m.w, m.h, m.me ? [R, R, sr, R] : [R, R, R, sr]); c.fill(); c.restore(); }
+       c.font = F; c.fillStyle = K.txt; m.ls.forEach((l, j) => c.fillText(l, x + 12, y + 7 + j * LH));
+       c.font = TF; c.fillStyle = m.me ? K.outT : K.inT; c.textAlign = "right"; const tx = x + m.w - (m.me ? 30 : 11), ty = y + m.h - 18; c.fillText(v.time, tx, ty); c.textAlign = "left";
+       if (m.me) { c.strokeStyle = v.read ? K.tick : K.outT; c.lineWidth = 1.5; c.lineCap = c.lineJoin = "round";
          (v.read ? [0, 5] : [0]).forEach(dx => { c.beginPath(); c.moveTo(tx + 4 + dx, ty + 7); c.lineTo(tx + 7 + dx, ty + 10); c.lineTo(tx + 13 + dx, ty + 3); c.stroke(); }); }
        y += m.h; });
      c.restore();
@@ -455,11 +479,11 @@ const T = [
    } },
  // WB и Ozon: размеры, цвета, жирность сняты с живых страниц 12.10.2026 (мобильная версия)
  { id: "wb", svc: "Wildberries", dot: "#CB11AB", title: "Отзыв", hint: "звёзды, «Выкупили»",
-   f: [AVA, SEED, { k: "nick", t: "text", l: "Имя (пусто — случайное)", v: "" }, { k: "date", t: "text", l: "Дата", v: "9 октября, 21:14", half: 1 }, { k: "rate", t: "stars", l: "Оценка", v: 5, half: 1 },
+   f: [AVA, SEED, SEX("f"), { k: "nick", t: "text", l: "Имя (пусто — случайное)", v: "" }, { k: "date", t: "text", l: "Дата", v: "9 октября, 21:14", half: 1 }, { k: "rate", t: "stars", l: "Оценка", v: 5, half: 1 },
        { k: "pros", t: "area", l: "Достоинства", v: "Село идеально, ткань плотная, не просвечивает" }, { k: "cons", t: "area", l: "Недостатки", v: "Шла неделю, но оно того стоило" },
        { k: "text", t: "area", l: "Комментарий", v: "Брала на свой обычный размер. Уже заказала второе в другом цвете 🖤" }, { k: "bought", t: "check", l: "Выкупили", v: true }],
    draw(cv, v) {
-     const W = 375, pad = 16, F = `400 16px ${SYS}`, blocks = [], nick = v.nick || name1(+v.seed);
+     const W = 375, pad = 16, F = `400 16px ${SYS}`, blocks = [], nick = v.nick || nameOf(+v.seed, sexOf(v));
      for (const [lab, val] of [["Достоинства", v.pros], ["Недостатки", v.cons], ["Комментарий", v.text]]) if (val) blocks.push([lab, wrap(F, val, W - pad * 2)]);
      let H = pad + 52 + (v.bought ? 26 : 0); for (const [, l] of blocks) H += 22 + l.length * 22 + 8; H += pad - 8;
      const c = ctx(cv, W, H); rr(c, 0, 0, W, H, 20); c.fillStyle = "#FFFFFF"; c.fill(); img(c, mainFace(v), pad, pad, 40);
@@ -473,10 +497,10 @@ const T = [
        c.font = F; c.fillStyle = "#242424"; l.forEach(t => { c.fillText(t, pad, y); y += 22; }); y += 8; }
    } },
  { id: "ozon", svc: "Ozon", dot: "#005BFF", title: "Отзыв", hint: "звёзды, вариант товара",
-   f: [AVA, SEED, { k: "nick", t: "text", l: "Имя (пусто — случайное)", v: "" }, { k: "date", t: "text", l: "Дата", v: "2 октября", half: 1 }, { k: "rate", t: "stars", l: "Оценка", v: 5, half: 1 },
+   f: [AVA, SEED, SEX("m"), { k: "nick", t: "text", l: "Имя (пусто — случайное)", v: "" }, { k: "date", t: "text", l: "Дата", v: "2 октября", half: 1 }, { k: "rate", t: "stars", l: "Оценка", v: 5, half: 1 },
        { k: "variant", t: "text", l: "Вариант товара", v: "Цвет: графит" }, { k: "text", t: "area", l: "Отзыв", v: "Пользуюсь две недели. Батарея держит три дня, шумодав глушит даже метро. За эти деньги — лучшее, что пробовал." }],
    draw(cv, v) {
-     const W = 375, pad = 16, tl = wrap(`400 14px ${SYS}`, v.text, W - pad * 2), nick = v.nick || name1(+v.seed + 5) + " " + "АБВГДЕЗКМНОПРСТ"[(+v.seed) % 15] + ".";
+     const W = 375, pad = 16, tl = wrap(`400 14px ${SYS}`, v.text, W - pad * 2), nick = v.nick || nameOf(+v.seed + 5, sexOf(v)) + " " + "АБВГДЕЗКМНОПРСТ"[(+v.seed) % 15] + ".";
      const H = pad + 36 + 58 + (v.variant ? 26 : 0) + tl.length * 18 + pad, c = ctx(cv, W, H);
      rr(c, 0, 0, W, H, 20); c.fillStyle = "#FFFFFF"; c.fill();
      stars(c, pad, pad, 20, 2, v.rate, "#FFA800", "rgba(0,26,52,.2)");
@@ -489,12 +513,12 @@ const T = [
      c.font = `400 14px ${SYS}`; c.fillStyle = "#070707"; tl.forEach(t => { c.fillText(t, pad, y); y += 18; });
    } },
  { id: "avito", svc: "Авито", dot: "#00AAFF", title: "Отзыв", hint: "сделка, звёзды, ответ продавца",
-   f: [AVA, SEED, { k: "nick", t: "text", l: "Имя (пусто — случайное)", v: "" }, { k: "date", t: "text", l: "Дата", v: "28 апреля", half: 1 }, { k: "rate", t: "stars", l: "Оценка", v: 5, half: 1 },
+   f: [AVA, SEED, SEX("m"), { k: "nick", t: "text", l: "Имя (пусто — случайное)", v: "" }, { k: "date", t: "text", l: "Дата", v: "28 апреля", half: 1 }, { k: "rate", t: "stars", l: "Оценка", v: 5, half: 1 },
        { k: "deal", t: "text", l: "Что купили", v: "Кроссовки Nike Air Max, 42 размер" },
        { k: "text", t: "area", l: "Отзыв", v: "Всё как в описании, состояние отличное. Отправил в тот же день, упаковал на совесть. Рекомендую продавца!" },
        { k: "seller", t: "text", l: "Продавец (для ответа)", v: "Максим", half: 1 }, { k: "answer", t: "text", l: "Ответ продавца", v: "Спасибо за отзыв 🤝", half: 1 }],
    draw(cv, v) {
-     const W = 400, pad = 18, F = `400 15px M, ${SYS}`, tl = wrap(F, v.text, W - pad * 2), nick = v.nick || name1(+v.seed + 9);
+     const W = 400, pad = 18, F = `400 15px M, ${SYS}`, tl = wrap(F, v.text, W - pad * 2), nick = v.nick || nameOf(+v.seed + 9, sexOf(v));
      MEAS.font = `400 15px M, ${SYS}`; const dl = wrap(`400 15px M, ${SYS}`, "Сделка состоялась · " + v.deal, W - pad * 2 - 96);
      const H = pad + 42 + 10 + dl.length * 22 + 10 + tl.length * 22 + (v.answer ? 24 + 42 + 26 : 0) + pad, c = ctx(cv, W, H);
      rr(c, 0, 0, W, H, 16); c.fillStyle = "#FFFFFF"; c.fill();
