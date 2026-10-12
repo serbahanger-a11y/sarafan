@@ -31,7 +31,22 @@ h2 { font: 800 22px/1 G, sans-serif; letter-spacing: -.02em; text-transform: upp
 .tile .svc i { width: 6px; height: 6px; border-radius: 50%; }
 .tile b { display: block; font: 700 13px G, sans-serif; letter-spacing: .02em; }
 .tile small { color: var(--mute); font-size: 12px; }
-.tile.soon { opacity: .45; cursor: default; }
+.tile.soon { opacity: .55; cursor: default; }
+.tile { position: relative; overflow: hidden; }
+.tile::before { content: ""; position: absolute; right: -40px; top: -40px; width: 140px; height: 140px; border-radius: 50%;
+                background: var(--g, transparent); filter: blur(46px); opacity: .32; pointer-events: none; }
+.tile .svc i { width: 16px; height: 16px; border-radius: 5px; background: var(--a); }
+.tile.soon .pv span { color: var(--mute); }
+#edit { --a: var(--glow); --ai: var(--ink); --g: var(--glow); }
+#edit .stage { background: radial-gradient(120% 80% at 100% 0%, color-mix(in srgb, var(--g) 22%, transparent), transparent 60%),
+               repeating-conic-gradient(#1D2125 0 25%, #171A1D 0 50%) 0 0 / 20px 20px; }
+#edit input:focus, #edit textarea:focus { border-color: var(--g); }
+#edit .sw input:checked { background: var(--g); }
+#edit .btn.on { border-color: var(--g); color: var(--text); background: color-mix(in srgb, var(--g) 18%, var(--card)); }
+#edit .save { background: var(--a); color: var(--ai); box-shadow: 0 10px 40px -12px var(--g); }
+.chip { display: inline-flex; align-items: center; gap: 7px; }
+.chip i { width: 14px; height: 14px; border-radius: 4px; background: var(--a); }
+.tip { color: var(--mute); font-size: 13px; margin: -6px 0 16px; }
 .top { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
 .back { width: 40px; height: 40px; border-radius: 12px; border: 1px solid var(--line); background: var(--card); color: var(--text); font: 600 18px G, sans-serif; flex: none; }
 .stage { margin: 0 0 18px; border-radius: 16px; padding: 22px 12px; display: grid; place-items: center; min-height: 160px; border: 1px solid var(--line);
@@ -80,8 +95,9 @@ input:focus, textarea:focus { outline: none; border-color: var(--teal); }
 <section id="edit" class="hide">
   <div class="top"><button class="back" id="back">←</button><div><div class="kick" id="eSvc"></div><h2 id="eTitle"></h2></div></div>
   <div class="stage"><canvas id="cv"></canvas></div>
+  <p class="tip">Всё уже заполнено — можно сохранить сразу. Поменяй, что хочешь.</p>
   <div class="f" id="fields"></div>
-  <button class="save" id="save">Сохранить PNG</button>
+  <button class="save" id="save">Сохранить картинку</button>
 </section>
 <div class="out hide" id="out"><div><img id="res" alt=""><p id="msg"></p>
   <button id="dl" class="pri hide">Скачать на телефон</button><button id="close">Назад</button></div></div>
@@ -197,6 +213,7 @@ function pill(c, x, y, v, k) {  // красная плашка активнос�
 // ── шаблоны: поля + отрисовка. Всё заполнено «как в жизни», чтобы можно было сохранить сразу ──
 const SEED = { k: "seed", t: "dice" }, AVA = { k: "ava", t: "ava" };
 const LIGHT = v => ({ k: "light", t: "check", l: "Светлая тема", v });
+const ACC = {"Инстаграм":{bg:"linear-gradient(90deg,#FFB03B,#FF5A36 35%,#F6216B 70%,#C21BD3)",ink:"#fff",glow:"#F6216B"},"Threads":{bg:"#F3F5F7",ink:"#101010",glow:"#F3F5F7"},"X (Twitter)":{bg:"#1D9BF0",ink:"#fff",glow:"#1D9BF0"},"Нейросеть":{bg:"#10A37F",ink:"#fff",glow:"#10A37F"},"Wildberries":{bg:"linear-gradient(90deg,#CB11AB,#7B1FD0)",ink:"#fff",glow:"#CB11AB"},"Ozon":{bg:"#005BFF",ink:"#fff",glow:"#005BFF"},"Авито":{bg:"linear-gradient(90deg,#00AAFF,#97CF26)",ink:"#fff",glow:"#00AAFF"}};
 const T = [
  { id: "ig-stories", svc: "Инстаграм", dot: "#FF0034", title: "Шапка со сторис", hint: "кружки, плашка лайков",
    f: [AVA, SEED, { k: "word", t: "text", l: "Надпись сверху", v: "Instagram" },
@@ -296,18 +313,21 @@ const T = [
      const C = v.style === "claude", W = 380, pad = 18, qf = `400 15.5px ${SYS}`, af = C ? `400 16.5px Georgia, "Times New Roman", serif` : `400 15.5px ${SYS}`;
      const qw = wrap(qf, v.q, W - 120), al = v.a ? wrap(af, v.a, W - pad * 2) : [], lh = C ? 25 : 23;
      MEAS.font = qf; const bw = Math.min(W - 80, Math.max(...qw.map(l => MEAS.measureText(l).width)) + 34);
-     const bh = qw.length * 22 + 22, H = pad + bh + 24 + (al.length ? (C ? 34 : 0) + al.length * lh : 28) + pad, c = ctx(cv, W, H);
+     const bh = qw.length * 22 + 22, H = pad + bh + 24 + (al.length ? 34 + al.length * lh : 28) + pad, c = ctx(cv, W, H);
      rr(c, 0, 0, W, H, 18); c.fillStyle = C ? "#262624" : "#212121"; c.fill();
      rr(c, W - pad - bw, pad, bw, bh, C ? 14 : 22); c.fillStyle = C ? "#141413" : "#303030"; c.fill();
      c.font = qf; c.fillStyle = C ? "#E8E6DC" : "#ECECEC"; qw.forEach((l, i) => c.fillText(l, W - pad - bw + 17, pad + 11 + i * 22));
      let y = pad + bh + 24;
      const spark = (x, y0) => { c.save(); c.translate(x, y0); c.fillStyle = "#D97757";
        for (let i = 0; i < 12; i++) { c.rotate(Math.PI / 6); rr(c, -1.3, 2.5, 2.6, 7.5 + (i % 2) * 2, 1.3); c.fill(); } c.restore(); };
+     const rosette = (x, y0, r) => { c.save(); c.translate(x, y0); c.strokeStyle = "#ECECEC"; c.lineWidth = 1.7;  // свой рисунок в духе значка GPT
+       for (let i = 0; i < 6; i++) { c.rotate(Math.PI / 3); rr(c, -r * .32, -r * .95, r * .64, r * 1.15, r * .32); c.stroke(); } c.restore(); };
      if (!al.length) {
-       if (C) { spark(pad + 9, y + 9); c.font = `400 15.5px ${SYS}`; c.fillStyle = "#9C9A92"; c.fillText("Размышляю…", pad + 26, y + 1); }
-       else { c.fillStyle = "#ECECEC"; c.beginPath(); c.arc(pad + 7, y + 9, 7, 0, 7); c.fill(); c.font = `400 15.5px ${SYS}`; c.fillStyle = "#9B9B9B"; c.fillText("Думаю…", pad + 22, y + 1); }
+       if (C) { c.fillStyle = "#D97757"; c.beginPath(); c.arc(pad + 4, y + 9, 3.6, 0, 7); c.arc(pad + 14, y + 9, 3.6, 0, 7); c.fill();
+                c.font = `400 15.5px ${SYS}`; c.fillStyle = "#9C9A92"; c.fillText("Размышляю…", pad + 26, y + 1); }
+       else { c.fillStyle = "#ECECEC"; c.beginPath(); c.arc(pad + 7, y + 9, 7, 0, 7); c.fill(); }
      } else {
-       if (C) { spark(pad + 9, y + 9); y += 34; }
+       if (C) { spark(pad + 9, y + 9); y += 34; } else { rosette(pad + 11, y + 10, 10); y += 34; }
        c.font = af; c.fillStyle = C ? "#E8E6DC" : "#ECECEC"; al.forEach((l, i) => c.fillText(l, pad, y + i * lh));
      }
    } },
@@ -346,7 +366,7 @@ const T = [
                       c.fillStyle = "#005BFF"; c.fillText(v.variant, pad + c.measureText("Вариант товара: ").width, y); y += 26; }
      c.font = `400 14px ${SYS}`; c.fillStyle = "#070707"; tl.forEach(t => { c.fillText(t, pad, y); y += 18; });
    } },
- { id: "avito", svc: "Авито", dot: "#00AAFF", title: "Отзыв", hint: "скоро", soon: true, f: [] },
+ { id: "avito", svc: "Авито", dot: "#00AAFF", title: "Отзыв", hint: "в работе — следующим", when: "делаем", soon: true, f: [] },
 ];
 
 // ── экраны ──
@@ -360,9 +380,10 @@ function renderHome() {
   const grid = $("tiles"); grid.innerHTML = "";
   for (const t of T) {
     const tile = document.createElement("button"); tile.className = "tile" + (t.soon ? " soon" : "");
-    let pv = "<span class='kick'>скоро</span>";
+    const a = ACC[t.svc] || {}; tile.style.setProperty("--a", a.bg); tile.style.setProperty("--g", a.glow);
+    let pv = t.soon ? `<span class='kick'>${t.when || "скоро"}</span>` : "";
     if (!t.soon) { const cv = document.createElement("canvas"); t.draw(cv, vals[t.id] || defaults(t)); pv = `<img src="${cv.toDataURL()}" alt="">`; }
-    tile.innerHTML = `<div class="pv">${pv}</div><div class="svc"><i style="background:${t.dot}"></i>${t.svc}</div><b>${t.title}</b><small>${t.hint}</small>`;
+    tile.innerHTML = `<div class="pv">${pv}</div><div class="svc"><i></i>${t.svc}</div><b>${t.title}</b><small>${t.hint}</small>`;
     if (!t.soon) tile.onclick = () => open(t);
     grid.appendChild(tile);
   }
@@ -370,7 +391,8 @@ function renderHome() {
 
 function open(t) {
   cur = t; vals[t.id] = vals[t.id] || defaults(t);
-  $("eSvc").textContent = t.svc; $("eTitle").textContent = t.title;
+  const a = ACC[t.svc] || {}, ed = $("edit"); ed.style.setProperty("--a", a.bg); ed.style.setProperty("--ai", a.ink); ed.style.setProperty("--g", a.glow);
+  $("eSvc").innerHTML = `<span class="chip"><i></i>${t.svc}</span>`; $("eTitle").textContent = t.title;
   const box = $("fields"); box.innerHTML = "";
   const hasAva = t.f.some(f => f.t === "ava"), hasDice = t.f.some(f => f.t === "dice");
   if (hasAva || hasDice) box.insertAdjacentHTML("beforeend", `<div class="row2 full">${hasDice ? `<button type="button" class="btn" id="dice">🎲 Другие люди</button>` : ""}${hasAva ? `<label class="btn" style="text-transform:none;letter-spacing:0;font:600 14px M,sans-serif;color:var(--text)"><img id="avaPrev" alt="" ${userAva ? `src="${userAva.src}"` : "hidden"}>Своя аватарка<input type="file" accept="image/*" id="ava"></label>` : ""}</div>`);
