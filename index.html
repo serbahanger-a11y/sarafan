@@ -112,6 +112,27 @@ input:focus, textarea:focus { outline: none; border-color: var(--teal); }
 @keyframes fade { from { opacity: 0; } }
 @keyframes run { from { transform: translateX(-100%); } to { transform: translateX(250%); } }
 
+/* ── прелоадер: облачка Сарафана покачиваются, свечение дышит, точки «печатают»; полоска — по реальной загрузке ── */
+#boot { position: fixed; inset: 0; z-index: 60; background: var(--ink); display: grid; place-items: center; transition: opacity .45s ease, visibility .45s; }
+#boot.done { opacity: 0; visibility: hidden; }
+#boot .bx { position: relative; text-align: center; }
+#boot .gl { position: absolute; left: 50%; top: 84px; width: 260px; height: 260px; margin: -130px 0 0 -130px; border-radius: 50%;
+            background: radial-gradient(circle, rgba(70,229,208,.30), transparent 62%); animation: breath 2.4s ease-in-out infinite; }
+#boot .em { position: relative; width: 168px; height: 168px; margin: 0 auto; background: url(logos/emblem.jpg) center/cover;
+            -webkit-mask: radial-gradient(circle, #000 50%, transparent 70%); mask: radial-gradient(circle, #000 50%, transparent 70%);
+            animation: bob 2.4s ease-in-out infinite; }
+#boot .nm { position: relative; font: 900 30px G, sans-serif; letter-spacing: -.03em; text-transform: uppercase; margin-top: 4px; }
+#boot .nm span { color: var(--glow); }
+#boot .cap { position: relative; color: var(--mute); font-size: 13px; margin-top: 6px; }
+#boot .dots i { display: inline-block; width: 4px; height: 4px; margin-left: 3px; border-radius: 50%; background: var(--glow); animation: dot 1.2s infinite; }
+#boot .dots i:nth-child(2) { animation-delay: .2s; } #boot .dots i:nth-child(3) { animation-delay: .4s; }
+#boot .pb { position: relative; width: 150px; height: 3px; margin: 18px auto 0; border-radius: 2px; background: var(--line); overflow: hidden; }
+#boot .pb i { display: block; height: 100%; width: 6%; border-radius: 2px; background: var(--glow); transition: width .35s ease-out; }
+@keyframes bob { 50% { transform: translateY(-8px) rotate(-2deg); } }
+@keyframes breath { 50% { transform: scale(1.12); opacity: .7; } }
+@keyframes dot { 0%, 60%, 100% { opacity: .25; transform: translateY(0); } 30% { opacity: 1; transform: translateY(-3px); } }
+@media (prefers-reduced-motion: reduce) { #boot .gl, #boot .em, #boot .dots i { animation: none; } }
+
 /* ── главный экран v8: сияние, наклейки, веер ── */
 body { background: #0E1013; }
 body::before { content: ""; position: fixed; inset: -20%; z-index: -1; pointer-events: none;
@@ -166,6 +187,10 @@ h1 { font-size: 64px; margin: 10px 0 10px; }
 </style>
 </head>
 <body>
+<div id="boot"><div class="bx"><div class="gl"></div><div class="em"></div>
+  <div class="nm">Сарафан<span>.</span></div>
+  <div class="cap">Раскладываю карточки<span class="dots"><i></i><i></i><i></i></span></div>
+  <div class="pb"><i id="bootBar"></i></div></div></div>
 <section id="home">
   <div class="stickers"><span class="st s1">реакции</span><span class="st s2">отзывы</span><span class="st s3">мемы</span><span class="st s4">посты</span></div>
   <h1>Сарафан<span>.</span></h1>
@@ -201,8 +226,16 @@ const TGP = {};  // узоры обоев Telegram (настоящие, из API
 const tgp = n => { if (!TGP[n]) { TGP[n] = new Image(); TGP[n].onload = () => refresh(); TGP[n].src = `tg/${n}.svg`; } return TGP[n]; };
 const FV = "v=4"; fetch("faces/index.json?" + FV, { cache: "no-store" }).then(r => r.json()).then(list => {
   let left = list.length;
-  FACES = list.map(f => { const im = new Image(); im.g = FG[parseInt(f.slice(1, 4)) - 1]; im.onload = im.onerror = () => { if (--left === 0) refresh(); }; im.src = "faces/" + f + "?" + FV; return im; });
-});
+  FACES = list.map(f => { const im = new Image(); im.g = FG[parseInt(f.slice(1, 4)) - 1]; im.onload = im.onerror = () => { left--; BOOT.faces = 1 - left / list.length; bootUpd(); if (left === 0) refresh(); }; im.src = "faces/" + f + "?" + FV; return im; });
+}).catch(() => { BOOT.faces = 1; bootUpd(); });
+// прелоадер: 80% — лица, 20% — шрифты; не короче 0,7 с (не мигает), не дольше 6 с (медленный интернет — пускаем как есть)
+const BOOT = { faces: 0, fonts: 0, t0: performance.now() };
+function bootUpd() {
+  const p = BOOT.faces * .8 + BOOT.fonts * .2;
+  $("bootBar").style.width = Math.max(6, p * 100) + "%";
+  if (p >= 1) setTimeout(() => $("boot").classList.add("done"), Math.max(0, 700 - (performance.now() - BOOT.t0)));
+}
+setTimeout(() => $("boot").classList.add("done"), 6000);
 const FG = "fmfmfmfmffmfmfmfmffmxmfxfmxfmfmfmfmmmfmfmfmfmfmffmfmmffmfmfmfmffmmmffmfmfmfmfmmfmfmfmfmfmf";
 const NICKS = ["kate.sokolova", "dima_orlov", "alina.vibe", "max.frost", "lera_prt", "nikita.vs", "sonya_mrr", "artem.rzn", "polina.kiss", "vlad_kr",
   "masha.zhu", "egor.pav", "anya_lvn", "ilya.grom", "dasha.moon", "kirill_tt", "vika.art", "sasha.no", "liza_dream", "roma.kot", "ksu.flow", "timur_88",
@@ -733,7 +766,7 @@ $("dl").onclick = () => { $("dl").disabled = true; $("dl").textContent = "Отк
     $("msg").textContent = ok ? "Качается — следи за уведомлением Telegram, файл ляжет в «Загрузки»." : "Загрузку отменили. Картинка всё равно лежит в чате."; }); };
 $("close").onclick = () => $("out").classList.add("hide");
 $("out").onclick = e => { if (e.target.id === "out" && !$("out").classList.contains("busy")) $("out").classList.add("hide"); };
-document.fonts.ready.then(refresh);
+document.fonts.ready.then(() => { BOOT.fonts = 1; bootUpd(); refresh(); });
 Promise.all(["400 16px R", "500 16px R"].map(f => document.fonts.load(f))).then(refresh);  // холст сам шрифт не подгружает
 renderHome();
 </script>
