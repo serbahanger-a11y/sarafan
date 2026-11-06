@@ -87,10 +87,14 @@ input:focus, textarea:focus { outline: none; border-color: var(--teal); }
 .btn input { display: none; }
 .btn.on { border-color: var(--glow); color: var(--glow); }
 .btn img { width: 26px; height: 26px; border-radius: 50%; object-fit: cover; }
-.save { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(16px + env(safe-area-inset-bottom)); width: min(528px, calc(100% - 32px));
+.save-actions, .home-exit { position: fixed; z-index: 2; left: 50%; transform: translateX(-50%); bottom: calc(16px + env(safe-area-inset-bottom)); width: min(528px, calc(100% - 32px)); }
+.save-actions { display: flex; gap: 8px; }
+.tg-mode #home, .tg-mode #edit { padding-bottom: calc(94px + env(safe-area-inset-bottom)); }
+.tg-exit { border: 1px solid var(--line); border-radius: 12px; padding: 0 12px; min-height: 48px; background: var(--card); color: var(--text); font: 650 14px M, sans-serif; white-space: nowrap; }
+.save { flex: 1; min-width: 0;
         border: 0; border-radius: 12px; padding: 17px; background: var(--glow); color: var(--ink); font: 800 14px G, sans-serif; letter-spacing: .1em; text-transform: uppercase;
         box-shadow: 0 10px 40px -12px var(--glow); }
-.save:active { transform: translateX(-50%) scale(.98); }
+.save:active { transform: scale(.98); }
 .out { position: fixed; inset: 0; background: rgba(8,10,12,.6); backdrop-filter: blur(6px); display: flex; align-items: flex-end; z-index: 9; animation: fade .2s; }
 .sheet { width: 100%; max-width: 560px; margin: 0 auto; background: var(--card); border: 1px solid var(--line); border-bottom: 0; border-radius: 22px 22px 0 0;
          padding: 10px 20px calc(20px + env(safe-area-inset-bottom)); animation: up .32s cubic-bezier(.16,1,.3,1); }
@@ -146,7 +150,7 @@ body::before { content: ""; position: fixed; inset: -20%; z-index: -1; pointer-e
 .st { font: 800 12px G, sans-serif; letter-spacing: .02em; padding: 6px 11px; border-radius: 999px; color: #0E1013; }
 .s1 { background: #46E5D0; transform: rotate(-4deg); } .s2 { background: #FFD23F; transform: rotate(3deg); }
 .s3 { background: #FF5A4E; color: #fff; transform: rotate(-2deg); } .s4 { background: #F2F4F3; transform: rotate(4deg); }
-h1 { font-size: 64px; margin: 10px 0 10px; }
+h1 { font-size: clamp(38px, 14vw, 64px); margin: 10px 0 10px; }
 .fan { position: relative; height: 330px; margin: 14px 0 6px; }
 .fan img { position: absolute; left: 50%; top: 0; border-radius: 16px; filter: drop-shadow(0 18px 36px rgba(0,0,0,.55)); animation: fl 6s ease-in-out infinite; }
 .fan img:nth-child(1) { width: 74%; max-width: 330px; transform: translate(-62%, 8px) rotate(-6deg); z-index: 2; }
@@ -200,20 +204,26 @@ h1 { font-size: 64px; margin: 10px 0 10px; }
   <div class="filters" id="filters"></div>
   <div class="grid" id="tiles"></div>
   <p class="legal">Карточки — для роликов, пародий и мемов. Не выдавай их за настоящие отзывы.</p>
+  <button type="button" class="tg-exit home-exit" id="homeExit" hidden>← В Telegram</button>
 </section>
 <section id="edit" class="hide">
   <div class="top"><button class="back" id="back">←</button><div><div class="kick" id="eSvc"></div><h2 id="eTitle"></h2></div></div>
   <div class="stage"><div class="tilt"><canvas id="cv"></canvas></div></div>
   <p class="tip">Всё уже заполнено — можно сохранить сразу. Поменяй, что хочешь.<br><span class="tip2">Превью стоит под наклоном, чтобы его не утащили скриншотом. Файл придёт ровным и чётким.</span></p>
   <div class="f" id="fields"></div>
-  <button class="save" id="save">Сохранить картинку</button>
+  <div class="save-actions">
+    <button type="button" class="tg-exit" id="editExit" hidden>← В Telegram</button>
+    <button type="button" class="save" id="save">Сохранить картинку</button>
+  </div>
 </section>
 <div class="out hide" id="out"><div class="sheet">
   <div class="ohead"><div class="thumb"><img id="res" alt=""></div><div><h3 id="oh"></h3><p id="msg"></p></div></div>
   <div class="bar"><i></i></div>
   <button id="dl" class="pri hide">Скачать на телефон</button><button id="go" class="hide"></button><button id="close">Назад к карточке</button></div></div>
 <script>
-const tg = window.Telegram && Telegram.WebApp; if (tg && tg.initData) { tg.ready(); tg.expand(); }
+const tg = window.Telegram && Telegram.WebApp;
+const inTelegram = Boolean(tg?.initData || (tg?.platform && tg.platform !== "unknown"));
+if (inTelegram) { tg.ready(); tg.expand(); }
 const $ = id => document.getElementById(id); let S = 1.5;  // превью 1.5×, файл для бота 3× — скрин превью не заменит файл
 let API = new URLSearchParams(location.search).get("api") || "";  // сервер на компе (бот передаёт адрес тоннеля)
 const SYS = '-apple-system, "SF Pro Text", system-ui, Roboto, "Segoe UI", sans-serif';  // так рисует сам Instagram на телефоне
@@ -726,10 +736,37 @@ function setupPal(el, t) {
   paint();
 }
 function draw() { cur.draw($("cv"), vals[cur.id]); }
-let sx = 0, sy = 0;
-addEventListener("touchstart", e => { sx = e.touches[0].clientX; sy = e.touches[0].clientY; }, { passive: true });
-addEventListener("touchend", e => { const t = e.changedTouches[0], dx = t.clientX - sx, dy = Math.abs(t.clientY - sy);
-  if (cur && dx > 70 && dy < 60 && !e.target.closest("input,textarea,.pal,.msgs")) home(); }, { passive: true });
+function exitTelegram() { tg.close(); }
+if (inTelegram) {
+  document.body.classList.add("tg-mode");
+  for (const id of ["homeExit", "editExit"]) {
+    $(id).hidden = false;
+    $(id).onclick = exitTelegram;
+  }
+}
+let swipe = null;
+addEventListener("touchstart", e => {
+  swipe = null;
+  if (e.touches.length !== 1 || !$("out").classList.contains("hide") || e.target.closest("input,textarea,button,.pal,.msgs")) return;
+  const touch = e.touches[0];
+  const x = touch.clientX;
+  const rightEdge = x >= document.documentElement.clientWidth - 28;
+  if ((cur && x <= 28) || (inTelegram && rightEdge)) swipe = { x, y: touch.clientY, id: touch.identifier, rightEdge };
+}, { passive: true });
+addEventListener("touchcancel", () => { swipe = null; }, { passive: true });
+addEventListener("touchend", e => {
+  if (!swipe) return;
+  const start = swipe;
+  swipe = null;
+  const touch = Array.from(e.changedTouches).find(t => t.identifier === start.id);
+  if (!touch) return;
+  const dx = touch.clientX - start.x, dy = Math.abs(touch.clientY - start.y);
+  if (Math.abs(dx) < 72 || Math.abs(dx) < dy * 1.5) return;
+  if (dx < 0 && inTelegram && start.rightEdge) {
+    if (cur) home();
+    else exitTelegram();
+  } else if (dx > 0 && cur && start.x <= 28) home();
+}, { passive: true });
 function home() { cur = null; $("edit").classList.add("hide"); $("home").classList.remove("hide"); renderHome(); if (tg && tg.initData) tg.BackButton.hide(); }
 function haptic() { tg && tg.HapticFeedback && tg.HapticFeedback.selectionChanged(); }
 $("back").onclick = home;
