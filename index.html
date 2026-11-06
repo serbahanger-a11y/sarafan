@@ -90,7 +90,9 @@ input:focus, textarea:focus { outline: none; border-color: var(--teal); }
 .save-actions, .home-exit { position: fixed; z-index: 2; left: 50%; transform: translateX(-50%); bottom: calc(16px + env(safe-area-inset-bottom)); width: min(528px, calc(100% - 32px)); }
 .save-actions { display: flex; gap: 8px; }
 .tg-mode #home, .tg-mode #edit { padding-bottom: calc(94px + env(safe-area-inset-bottom)); }
-.tg-exit { border: 1px solid var(--line); border-radius: 12px; padding: 0 12px; min-height: 48px; background: var(--card); color: var(--text); font: 650 14px M, sans-serif; white-space: nowrap; }
+.tg-exit { display: grid; place-items: center; flex: 0 0 44px; width: 44px; min-height: 44px; padding: 0; border: 1px solid var(--line); border-radius: 12px; background: var(--card); color: var(--text); }
+.tg-exit[hidden] { display: none; }
+.home-exit { left: auto; right: max(16px, calc((100% - 528px) / 2)); transform: none; }
 .save { flex: 1; min-width: 0;
         border: 0; border-radius: 12px; padding: 17px; background: var(--glow); color: var(--ink); font: 800 14px G, sans-serif; letter-spacing: .1em; text-transform: uppercase;
         box-shadow: 0 10px 40px -12px var(--glow); }
@@ -204,7 +206,7 @@ h1 { font-size: clamp(38px, 14vw, 64px); margin: 10px 0 10px; }
   <div class="filters" id="filters"></div>
   <div class="grid" id="tiles"></div>
   <p class="legal">Карточки — для роликов, пародий и мемов. Не выдавай их за настоящие отзывы.</p>
-  <button type="button" class="tg-exit home-exit" id="homeExit" hidden>← В Telegram</button>
+  <button type="button" class="tg-exit home-exit" id="homeExit" aria-label="Вернуться в Telegram" title="Вернуться в Telegram" hidden><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h5v16h-5M15 12H4m4-4-4 4 4 4"/></svg></button>
 </section>
 <section id="edit" class="hide">
   <div class="top"><button class="back" id="back">←</button><div><div class="kick" id="eSvc"></div><h2 id="eTitle"></h2></div></div>
@@ -212,7 +214,7 @@ h1 { font-size: clamp(38px, 14vw, 64px); margin: 10px 0 10px; }
   <p class="tip">Всё уже заполнено — можно сохранить сразу. Поменяй, что хочешь.<br><span class="tip2">Превью стоит под наклоном, чтобы его не утащили скриншотом. Файл придёт ровным и чётким.</span></p>
   <div class="f" id="fields"></div>
   <div class="save-actions">
-    <button type="button" class="tg-exit" id="editExit" hidden>← В Telegram</button>
+    <button type="button" class="tg-exit" id="editExit" aria-label="Вернуться в Telegram" title="Вернуться в Telegram" hidden><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h5v16h-5M15 12H4m4-4-4 4 4 4"/></svg></button>
     <button type="button" class="save" id="save">Сохранить картинку</button>
   </div>
 </section>
